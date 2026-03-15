@@ -978,13 +978,13 @@ export default function LiveAgentSession({ onExit }: LiveAgentSessionProps) {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_18%,rgba(251,191,36,0.16),transparent_28%),radial-gradient(circle_at_78%_16%,rgba(132,204,22,0.12),transparent_24%),radial-gradient(circle_at_center,transparent_18%,rgba(9,9,11,0.35)_58%,rgba(9,9,11,0.78)_100%)]" />
       </div>
 
-      <div className="relative z-10 flex min-h-screen flex-col items-center justify-between px-6 py-8 md:px-10 md:py-10">
-        <div className="flex w-full items-center justify-between">
+      <div className="relative z-10 flex min-h-screen flex-col items-center justify-between px-5 py-6 md:px-10 md:py-10">
+        <div className="flex w-full items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <ChaGatherLogo href="/" showWordmark={false} />
             {onExit ? (
               <button
-                className="rounded-full border border-white/10 bg-zinc-950/40 px-3 py-1 text-[11px] uppercase tracking-[0.28em] text-zinc-300 backdrop-blur-xl transition hover:border-amber-200/20 hover:text-amber-100"
+                className="hidden rounded-full border border-white/10 bg-zinc-950/40 px-3 py-1 text-[11px] uppercase tracking-[0.28em] text-zinc-300 backdrop-blur-xl transition hover:border-amber-200/20 hover:text-amber-100 md:inline-flex"
                 onClick={onExit}
                 type="button"
               >
@@ -992,14 +992,14 @@ export default function LiveAgentSession({ onExit }: LiveAgentSessionProps) {
               </button>
             ) : (
               <Link
-                className="rounded-full border border-white/10 bg-zinc-950/40 px-3 py-1 text-[11px] uppercase tracking-[0.28em] text-zinc-300 backdrop-blur-xl transition hover:border-amber-200/20 hover:text-amber-100"
+                className="hidden rounded-full border border-white/10 bg-zinc-950/40 px-3 py-1 text-[11px] uppercase tracking-[0.28em] text-zinc-300 backdrop-blur-xl transition hover:border-amber-200/20 hover:text-amber-100 md:inline-flex"
                 href="/"
               >
                 Back Home
               </Link>
             )}
           </div>
-          <div className="flex items-center gap-2 rounded-full border border-white/10 bg-zinc-950/40 px-3 py-1 text-[11px] uppercase tracking-[0.22em] text-zinc-400 backdrop-blur-xl">
+          <div className="flex shrink-0 items-center gap-2 rounded-full border border-white/10 bg-zinc-950/40 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-zinc-400 backdrop-blur-xl md:text-[11px] md:tracking-[0.22em]">
             <span
               className={`h-2 w-2 rounded-full ${
                 error
@@ -1013,11 +1013,12 @@ export default function LiveAgentSession({ onExit }: LiveAgentSessionProps) {
                         : "bg-zinc-500"
               }`}
             />
-            Ambient Tea Session
+            <span className="md:hidden">Live Session</span>
+            <span className="hidden md:inline">Ambient Tea Session</span>
           </div>
         </div>
 
-        <div className="flex flex-1 flex-col items-center justify-center text-center">
+        <div className="flex flex-1 flex-col items-center justify-center pb-40 pt-6 text-center md:pb-0 md:pt-0">
           <div className={`relative flex h-72 w-72 items-center justify-center rounded-full border ${orbOuterClass} md:h-80 md:w-80`}>
             <div className="absolute inset-5 rounded-full border border-white/8" />
             <div className={`relative flex h-40 w-40 items-center justify-center rounded-full md:h-48 md:w-48 ${orbCoreClass}`}>
@@ -1038,12 +1039,24 @@ export default function LiveAgentSession({ onExit }: LiveAgentSessionProps) {
             </div>
           </div>
 
-          <div className="mt-8 max-w-xl space-y-3">
-            <p className="text-xs uppercase tracking-[0.28em] text-zinc-400">
+          <div className="mt-6 max-w-xl space-y-3 px-1 md:mt-8">
+            <p className="hidden text-xs uppercase tracking-[0.28em] text-zinc-400 md:block">
               Invisible UI • Native Audio • Vision-Aware Presence
             </p>
+            <div className="mx-auto w-full max-w-sm rounded-3xl border border-white/10 bg-zinc-950/35 px-4 py-3 text-left backdrop-blur-xl md:hidden">
+              <p className="text-[10px] uppercase tracking-[0.24em] text-amber-100/85">
+                Tea Master Status
+              </p>
+              <p
+                className={`mt-2 text-sm leading-relaxed ${
+                  error ? "text-red-100" : "text-zinc-200"
+                }`}
+              >
+                {sessionCopy}
+              </p>
+            </div>
             <p
-              className={`text-sm leading-relaxed md:text-base ${
+              className={`hidden text-sm leading-relaxed md:block md:text-base ${
                 error ? "text-red-100" : "text-zinc-300"
               }`}
             >
