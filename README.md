@@ -21,14 +21,18 @@ Traditional Gongfu tea master meets Gemini Live multimodal AI. ChaGather turns a
 
 ## Architecture
 
-ChaGather currently uses a hackathon-first architecture optimized for live demo speed:
+ChaGather uses a client-to-server Live architecture optimized for low-latency multimodal streaming:
 
 - Next.js App Router frontend with React, TypeScript, and Tailwind CSS.
 - Browser microphone capture plus camera capture in the client.
-- Gemini Live connection established directly from the browser with `@google/genai`.
+- Frontend requests a short-lived ephemeral token from the app server.
+- Frontend then connects directly to the Gemini Live API over WebSockets with `@google/genai`.
+- Audio and video stream directly from the browser to Gemini Live instead of proxying media through the backend.
 - Native audio playback streamed back from Gemini Live.
 - Local tea-profile tool response for structured brewing details.
 - Google Cloud Run deployment via source-based build using `deploy.sh`.
+
+This approach keeps streaming performance high because audio and video do not need to hop through the backend first. It is also simpler than building a full media proxy. For production use, ChaGather should use ephemeral tokens rather than exposing a standard API key in browser code.
 
 ## Local Spin-Up
 
@@ -44,10 +48,11 @@ npm install
 cp .env.example .env.local
 ```
 
-3. Open `.env.local` and set your Gemini API key:
+3. Open `.env.local` and set your server-side Gemini API key for ephemeral token minting:
 
 ```bash
-NEXT_PUBLIC_GEMINI_API_KEY=your_actual_gemini_api_key
+GEMINI_API_KEY=your_actual_gemini_api_key
+NEXT_PUBLIC_GEMINI_LIVE_MODEL=gemini-2.5-flash-native-audio-preview-12-2025
 ```
 
 4. Start the development server:
@@ -60,7 +65,8 @@ npm run dev
 
 6. Click the permission button to enable microphone and camera access.
 
-7. Connect to Gemini Live and begin the tea session. Headphones are recommended for the cleanest demo.
+7. Start a live session. The app should fetch an ephemeral token from the server and then connect directly from the browser to Gemini Live over WebSockets. Headphones are recommended for the cleanest demo.
+8. If the live session fails immediately, confirm `GEMINI_API_KEY` is set server-side and rotate any previously exposed public Gemini API keys before retrying.
 
 
 ## Mobile Responsiveness & PWA
@@ -94,7 +100,7 @@ chmod +x deploy.sh
 export PROJECT_ID="your-gcp-project-id"
 export REGION="us-central1"
 export SERVICE_NAME="chagather"
-export NEXT_PUBLIC_GEMINI_API_KEY="your_actual_gemini_api_key"
+export GEMINI_API_KEY="your_actual_gemini_api_key"
 ```
 
 3. Deploy to Google Cloud Run:
@@ -115,6 +121,10 @@ Placeholder diagram link:
 
 `TODO: Add architecture diagram image or Figma link showing Browser -> Next.js UI -> Gemini Live -> Google Cloud Run deployment path.`
 
+Recommended diagram path:
+
+`Browser UI -> Next.js token endpoint -> Ephemeral token -> Gemini Live WebSocket session`
+
 ## Demo Script Notes
 
 - Start with the tea table visible in the camera.
@@ -134,7 +144,6 @@ Placeholder diagram link:
 
 ## Roadmap After Hackathon
 
-- Move Gemini authentication behind a server-issued token flow for business deployment.
 - Persist tea sessions and tea inventory for returning customers.
 - Add commerce-aware ceremony flows for physical tea product recommendations.
 - Expand multimodal guidance around teaware recognition and steep timing.

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import ChaGatherLogo from "../components/ChaGatherLogo";
+import ChaGatherLogo from "@/components/ChaGatherLogo";
 
 const featureCards = [
   {
@@ -23,60 +23,78 @@ const flow = ["Open /live", "Grant mic + camera", "Speak naturally", "Get brew i
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen bg-zinc-950 text-zinc-100">
+    <main className="min-h-screen text-cha-cream">
       <div className="absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(251,191,36,0.16),transparent_30%),radial-gradient(circle_at_82%_14%,rgba(132,204,22,0.14),transparent_24%),linear-gradient(180deg,#09090b_0%,#111116_52%,#09090b_100%)]" />
-        <div className="absolute left-0 top-24 h-80 w-80 rounded-full bg-amber-300/10 blur-3xl" />
-        <div className="absolute bottom-10 right-0 h-72 w-72 rounded-full bg-lime-300/10 blur-3xl" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(239,89,42,0.12),transparent_24%),radial-gradient(circle_at_82%_14%,rgba(181,208,195,0.12),transparent_22%),linear-gradient(180deg,#11211a_0%,#102019_52%,#0b1511_100%)]" />
+        <div className="absolute left-0 top-24 h-80 w-80 rounded-full bg-cha-orange/10 blur-3xl" />
+        <div className="absolute bottom-10 right-0 h-72 w-72 rounded-full bg-cha-green-light/10 blur-3xl" />
       </div>
 
       <section className="mx-auto flex min-h-screen max-w-6xl flex-col px-5 pb-12 pt-6 md:px-10">
         <header className="flex flex-wrap items-center justify-between gap-4">
           <ChaGatherLogo href="/" />
-          <span className="rounded-full border border-amber-200/15 bg-amber-300/10 px-4 py-2 text-[11px] uppercase tracking-[0.22em] text-amber-100/90 backdrop-blur-xl">
+          <span className="rounded-full border border-cha-green-light/15 bg-cha-green-dark/30 px-4 py-2 text-[11px] uppercase tracking-[0.22em] text-cha-cream/78 backdrop-blur-xl">
             Gemini Live Agent Challenge
           </span>
         </header>
 
         <div className="grid flex-1 gap-8 pt-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
           <div>
-            <p className="text-xs uppercase tracking-[0.28em] text-zinc-400">Traditional Gongfu tea master × ambient multimodal AI</p>
-            <h1 className="mt-4 max-w-3xl text-4xl leading-tight text-zinc-50 md:text-6xl">
+            <p className="text-xs uppercase tracking-[0.28em] text-cha-green-light/58">
+              Traditional Gongfu tea master × ambient multimodal AI
+            </p>
+            <h1 className="mt-4 max-w-3xl font-serif text-4xl leading-tight text-cha-cream md:text-6xl">
               Calm, responsive tea guidance without a crowded interface.
             </h1>
-            <p className="mt-5 max-w-2xl text-base leading-relaxed text-zinc-300">
-              ChaGather is designed for voice-first tea rituals. The live page keeps visual noise low while Gemini Live listens,
-              sees your setup, and responds with grounded brewing advice.
+            <p className="mt-5 max-w-2xl text-base leading-relaxed text-cha-cream/74">
+              ChaGather is designed for voice-first tea rituals. The live page keeps
+              visual noise low while Gemini Live listens, sees your setup, and
+              responds with grounded brewing advice.
             </p>
 
             <div className="mt-7 flex flex-wrap items-center gap-3">
               <Link
-                className="rounded-full bg-amber-300 px-6 py-3 text-sm font-semibold text-zinc-950 transition hover:bg-amber-200"
+                className="rounded-full bg-cha-orange px-6 py-3 text-sm font-semibold text-cha-cream transition hover:bg-[#f17147]"
                 href="/live"
               >
                 Enter /live Session
               </Link>
-              <span className="text-sm text-zinc-400">Works on desktop and mobile. Add to home screen for PWA use.</span>
+              <span className="text-sm text-cha-green-light/56">
+                Works on desktop and mobile. Add to home screen for PWA use.
+              </span>
             </div>
           </div>
 
           <div className="glass-panel rounded-[2rem] p-6">
-            <p className="text-xs uppercase tracking-[0.26em] text-zinc-400">Live session flow</p>
-            <div className="mt-5 rounded-3xl border border-white/10 bg-zinc-950/45 p-5">
+            <p className="text-xs uppercase tracking-[0.26em] text-cha-green-light/58">
+              Live session flow
+            </p>
+            <div className="mt-5 rounded-3xl border border-cha-green-light/12 bg-cha-green-dark/28 p-5">
               <div className="flex items-end justify-between gap-2">
                 {flow.map((label, index) => (
                   <div key={label} className="flex flex-1 flex-col items-center gap-2 text-center">
-                    <div className={`w-full rounded-t-xl ${index === 0 ? "h-8" : index === 1 ? "h-11" : index === 2 ? "h-14" : "h-10"} bg-gradient-to-t from-amber-300/30 to-lime-300/25`} />
-                    <p className="text-[11px] text-zinc-400">{label}</p>
+                    <div
+                      className={`w-full rounded-t-xl ${
+                        index === 0 ? "h-8" : index === 1 ? "h-11" : index === 2 ? "h-14" : "h-10"
+                      } bg-gradient-to-t from-cha-orange/30 to-cha-green-light/30`}
+                    />
+                    <p className="text-[11px] text-cha-green-light/54">{label}</p>
                   </div>
                 ))}
               </div>
             </div>
             <div className="mt-5 grid gap-3">
               {featureCards.map((item) => (
-                <article className="rounded-2xl border border-white/10 bg-white/5 p-4" key={item.title}>
-                  <p className="text-xs uppercase tracking-[0.22em] text-amber-100/90">{item.icon} {item.title}</p>
-                  <p className="mt-2 text-sm leading-relaxed text-zinc-300">{item.blurb}</p>
+                <article
+                  className="rounded-2xl border border-cha-green-light/10 bg-cha-cream/5 p-4"
+                  key={item.title}
+                >
+                  <p className="text-xs uppercase tracking-[0.22em] text-cha-green-light/82">
+                    {item.icon} {item.title}
+                  </p>
+                  <p className="mt-2 text-sm leading-relaxed text-cha-cream/72">
+                    {item.blurb}
+                  </p>
                 </article>
               ))}
             </div>

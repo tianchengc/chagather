@@ -27,6 +27,9 @@ out/
 # VSCode
 .vscode/
 
+# Codex
+.codex/skills/
+
 # Misc
 *.local
 *.swp

@@ -9,7 +9,7 @@ required_vars=(
   PROJECT_ID
   REGION
   SERVICE_NAME
-  NEXT_PUBLIC_GEMINI_API_KEY
+  GEMINI_API_KEY
 )
 
 for var_name in "${required_vars[@]}"; do
@@ -44,7 +44,7 @@ gcloud run deploy "${SERVICE_NAME}" \
   --project "${PROJECT_ID}" \
   --region "${REGION}" \
   --allow-unauthenticated \
-  --set-build-env-vars "NEXT_PUBLIC_GEMINI_API_KEY=${NEXT_PUBLIC_GEMINI_API_KEY}"
+  --set-env-vars "GEMINI_API_KEY=${GEMINI_API_KEY}"
 
 SERVICE_URL="$(gcloud run services describe "${SERVICE_NAME}" \
   --project "${PROJECT_ID}" \

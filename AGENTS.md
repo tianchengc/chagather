@@ -18,11 +18,15 @@ You are an expert Next.js (App Router) developer, a Google Cloud architect, and 
 - **Frontend:** Next.js standard `create-next-app` (App Router).
 - **Styling:** Tailwind CSS.
 - **Cloud Services:** Google Cloud Platform (GCP) / Firebase for backend logic, storage, or database requirements.
+- **Live Transport Architecture:** Use a client-to-server Gemini Live approach where the frontend connects directly to the Live API over WebSockets for audio/video streaming, instead of proxying media through the backend.
+- **Authentication Requirement:** Use ephemeral tokens for the Live connection. Do not rely on long-lived standard API keys in browser code for the intended implementation.
+- **Performance Note:** Favor direct browser-to-Gemini Live streaming because it reduces latency and simplifies setup for native audio and vision experiences.
 
 ## Repository & Documentation Rules
 - When editing the `README.md`, you must include explicit, step-by-step local spin-up instructions.
 - Ensure the codebase structure supports the creation of an Architecture Diagram (showing how Gemini connects to the backend/frontend) as required by the judges.
 - Ensure the codebase clearly demonstrates the use of Google Cloud APIs for the mandatory "Proof of Google Cloud Deployment" video requirement.
+- Documentation should describe the architecture as: browser requests ephemeral token from app server, then browser opens the Gemini Live WebSocket connection directly.
 
 ## Design System & Vibe
 - **UI/UX:** "Invisible UI" concept. Minimalist, highly responsive, and serene. No standard chat boxes.

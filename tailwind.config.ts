@@ -7,8 +7,14 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      colors: {
+        "cha-green-dark": "#31574a",
+        "cha-green-light": "#b5d0c3",
+        "cha-orange": "#ef592a",
+        "cha-cream": "#fcfbf9",
+      },
       fontFamily: {
-        serif: ["Cormorant Garamond", "Georgia", "Times New Roman", "serif"],
+        serif: ["Playfair Display", "Georgia", "Times New Roman", "serif"],
         sans: ["Manrope", "ui-sans-serif", "system-ui", "sans-serif"],
       },
       keyframes: {
