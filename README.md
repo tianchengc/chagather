@@ -1,6 +1,7 @@
 # ChaGather
 
 Traditional Gongfu tea master meets Gemini Live multimodal AI. ChaGather turns a tea table into a calm, responsive ceremony space where users can speak naturally, show their setup through the camera, and receive grounded brewing guidance from a distinct tea master persona in real time.
+![ChaGather Thumbnail](./public/thumbnail.png)
 
 ## Why This Fits The Gemini Live Agent Challenge
 
