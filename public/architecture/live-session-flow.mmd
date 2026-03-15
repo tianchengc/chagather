@@ -1,0 +1,26 @@
+flowchart LR
+    U[User on Mobile/Desktop Browser\nMic + Camera Permissions] --> FE[Next.js App Router Frontend\n/live UI + LiveAgentSession]
+
+    FE -->|1. Request ephemeral token| TOKEN[/API Route: /api/live/token\nServer-only GEMINI_API_KEY/]
+    TOKEN -->|2. Return short-lived token| FE
+
+    FE -->|3. Open Gemini Live WebSocket\nusing @google/genai| GL[(Gemini Live API)]
+    FE -->|4. Stream audio + 1 FPS camera frames| GL
+    GL -->|5. Native audio response stream| FE
+
+    FE -->|Render orb/tea UI state\n(isConnecting/isConnected/isAiSpeaking)| U
+
+    subgraph GoogleCloud[Google Cloud Deployment Boundary]
+      CR[Cloud Run Service\nHosts Next.js app]
+    end
+
+    TOKEN -. hosted on .-> CR
+    FE -. served from .-> CR
+
+    classDef client fill:#1f2937,stroke:#f59e0b,color:#fff;
+    classDef server fill:#0f766e,stroke:#86efac,color:#fff;
+    classDef api fill:#3f3f46,stroke:#fbbf24,color:#fff;
+
+    class U,FE client;
+    class TOKEN,CR server;
+    class GL api;

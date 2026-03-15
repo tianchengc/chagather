@@ -167,15 +167,63 @@ Placeholder video link:
 
 `TODO: Add Devpost video or unlisted YouTube link showing Cloud Run deployment proof.`
 
-## Architecture Diagram
+## Architecture Diagrams (Submission-Ready)
 
-Placeholder diagram link:
+For hackathon submission, upload these files to your image/file gallery or share their deployed URLs directly:
 
-`TODO: Add architecture diagram image or Figma link showing Browser -> Next.js UI -> Gemini Live -> Google Cloud Run deployment path.`
+- `public/architecture/live-session-flow.mmd`
+- `public/architecture/cloud-deployment.mmd`
 
-Recommended diagram path:
+If your Cloud Run domain is `https://YOUR_CLOUD_RUN_URL`, the diagram URLs are:
 
-`Browser UI -> Next.js token endpoint -> Ephemeral token -> Gemini Live WebSocket session`
+- `https://YOUR_CLOUD_RUN_URL/architecture/live-session-flow.mmd`
+- `https://YOUR_CLOUD_RUN_URL/architecture/cloud-deployment.mmd`
+
+### Diagram 1: Live Session Runtime Flow
+
+```mermaid
+flowchart LR
+    U[User on Mobile/Desktop Browser\nMic + Camera Permissions] --> FE[Next.js App Router Frontend\n/live UI + LiveAgentSession]
+
+    FE -->|1. Request ephemeral token| TOKEN[/API Route: /api/live/token\nServer-only GEMINI_API_KEY/]
+    TOKEN -->|2. Return short-lived token| FE
+
+    FE -->|3. Open Gemini Live WebSocket\nusing @google/genai| GL[(Gemini Live API)]
+    FE -->|4. Stream audio + 1 FPS camera frames| GL
+    GL -->|5. Native audio response stream| FE
+
+    FE -->|Render orb/tea UI state\n(isConnecting/isConnected/isAiSpeaking)| U
+
+    subgraph GoogleCloud[Google Cloud Deployment Boundary]
+      CR[Cloud Run Service\nHosts Next.js app]
+    end
+
+    TOKEN -. hosted on .-> CR
+    FE -. served from .-> CR
+```
+
+### Diagram 2: Deployment + PWA Installability
+
+```mermaid
+flowchart TD
+    DEV[Developer] -->|git push / source deploy| CR[Google Cloud Run\nChaGather Next.js Service]
+
+    subgraph BrowserRuntime[User Runtime]
+      B[Browser PWA\nInstalled from Add to Home Screen]
+      SW[Service Worker\npublic/sw.js]
+      MAN[Web App Manifest\n/manifest.webmanifest]
+    end
+
+    B --> SW
+    B --> MAN
+    B -->|HTTPS request| CR
+
+    CR -->|Mint ephemeral token| GEMKEY[(Server-side GEMINI_API_KEY)]
+    B -->|Direct WebSocket + media stream| GEMLIVE[(Gemini Live API)]
+    CR -. token endpoint only .-> GEMLIVE
+
+    B -->|Optional tea context UI state| LOCAL[Client-side tea profile + controls]
+```
 
 ## Demo Script Notes
 

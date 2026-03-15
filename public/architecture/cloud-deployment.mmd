@@ -1,0 +1,26 @@
+flowchart TD
+    DEV[Developer] -->|git push / source deploy| CR[Google Cloud Run\nChaGather Next.js Service]
+
+    subgraph BrowserRuntime[User Runtime]
+      B[Browser PWA\nInstalled from Add to Home Screen]
+      SW[Service Worker\npublic/sw.js]
+      MAN[Web App Manifest\n/manifest.webmanifest]
+    end
+
+    B --> SW
+    B --> MAN
+    B -->|HTTPS request| CR
+
+    CR -->|Mint ephemeral token| GEMKEY[(Server-side GEMINI_API_KEY)]
+    B -->|Direct WebSocket + media stream| GEMLIVE[(Gemini Live API)]
+    CR -. token endpoint only .-> GEMLIVE
+
+    B -->|Optional tea context UI state| LOCAL[Client-side tea profile + controls]
+
+    classDef cloud fill:#1d4ed8,stroke:#93c5fd,color:#fff;
+    classDef client fill:#111827,stroke:#f59e0b,color:#fff;
+    classDef secret fill:#7f1d1d,stroke:#fca5a5,color:#fff;
+
+    class CR,GEMLIVE cloud;
+    class B,SW,MAN,LOCAL client;
+    class GEMKEY secret;
