@@ -8,7 +8,7 @@ flowchart LR
     FE -->|4. Stream audio + 1 FPS camera frames| GL
     GL -->|5. Native audio response stream| FE
 
-    FE -->|Render orb/tea UI state\n(isConnecting/isConnected/isAiSpeaking)| U
+    FE -->|Render orb and tea UI state: isConnecting, isConnected, isAiSpeaking| U
 
     subgraph GoogleCloud[Google Cloud Deployment Boundary]
       CR[Cloud Run Service\nHosts Next.js app]
