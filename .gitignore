@@ -1,0 +1,42 @@
+# Node & Next.js
+node_modules/
+.next/
+
+# Env files
+.env
+.env.*
+!.env.example
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Firebase
+.firebase/
+firebase-debug.log
+
+# Build outputs
+dist/
+out/
+
+# VSCode
+.vscode/
+
+# Misc
+*.local
+*.swp
+
+# Ignore test coverage
+coverage/
+
+# Ignore generated files
+*.log
+
+# Ignore byproducts
+*.tgz
+*.tsbuildinfo

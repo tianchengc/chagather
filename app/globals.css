@@ -1,0 +1,84 @@
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  --tea-bg: #09090b;
+  --tea-panel: rgba(24, 24, 27, 0.58);
+  --tea-border: rgba(255, 255, 255, 0.09);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: Manrope, ui-sans-serif, system-ui, sans-serif;
+  background-color: var(--tea-bg);
+  background:
+    radial-gradient(circle at 20% 15%, rgba(251, 191, 36, 0.12), transparent 32%),
+    radial-gradient(circle at 80% 10%, rgba(132, 204, 22, 0.08), transparent 28%),
+    linear-gradient(180deg, #0a0a0a, #111116 55%, #0a0a0a);
+  color: #f4f4f5;
+  overflow-x: hidden;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+}
+
+::selection {
+  background: rgba(251, 191, 36, 0.28);
+  color: #fff7ed;
+}
+
+.glass-panel {
+  border: 1px solid var(--tea-border);
+  background: linear-gradient(180deg, rgba(24, 24, 27, 0.74), var(--tea-panel));
+  box-shadow:
+    0 24px 120px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(24px);
+}
+
+.status-pill {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(10, 10, 10, 0.34);
+  backdrop-filter: blur(14px);
+}
+
+.orb-shell {
+  background:
+    radial-gradient(circle at 30% 30%, rgba(255, 251, 235, 0.88), transparent 18%),
+    radial-gradient(circle at 50% 50%, rgba(251, 191, 36, 0.28), transparent 62%),
+    radial-gradient(circle at 65% 70%, rgba(132, 204, 22, 0.18), transparent 68%),
+    rgba(24, 24, 27, 0.44);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 0 60px rgba(251, 191, 36, 0.24),
+    0 0 120px rgba(132, 204, 22, 0.12);
+}
+
+.orb-core {
+  background:
+    radial-gradient(circle at 32% 28%, rgba(255, 251, 235, 0.95), transparent 16%),
+    radial-gradient(circle at 50% 45%, rgba(251, 191, 36, 0.72), rgba(120, 53, 15, 0.28) 72%);
+  box-shadow:
+    inset 0 0 24px rgba(255, 251, 235, 0.2),
+    0 0 55px rgba(251, 191, 36, 0.42);
+}
