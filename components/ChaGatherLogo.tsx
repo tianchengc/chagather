@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 type ChaGatherLogoProps = {
@@ -8,24 +9,15 @@ type ChaGatherLogoProps = {
 export default function ChaGatherLogo({ href = "/", showWordmark = true }: ChaGatherLogoProps) {
   const content = (
     <>
-      <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-amber-200/25 bg-zinc-900/70 shadow-[0_0_30px_rgba(251,191,36,0.18)] backdrop-blur-xl">
-        <svg
-          aria-hidden="true"
-          className="h-6 w-6 text-amber-200"
-          fill="none"
-          stroke="currentColor"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="1.7"
-          viewBox="0 0 24 24"
-        >
-          <path d="M7 16h10" />
-          <path d="M9 16c0-3.1 1.8-5.3 3-7.1" />
-          <path d="M15 16c0-2.7-1.3-4.8-2.4-6.5" />
-          <path d="M7.5 9.6c1.4-.5 2.6-.4 3.8.4" />
-          <path d="M16.5 9.6c-1.3-.5-2.4-.4-3.6.3" />
-          <path d="M6 18.5h12" />
-        </svg>
+      <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-2xl border border-amber-200/25 bg-zinc-900/70 shadow-[0_0_30px_rgba(251,191,36,0.18)] backdrop-blur-xl">
+        <Image
+          alt="ChaGather logo"
+          className="h-full w-full object-cover"
+          height={40}
+          priority
+          src="/logo.png"
+          width={40}
+        />
       </span>
       {showWordmark ? (
         <span className="flex flex-col text-left leading-none">
