@@ -76,14 +76,65 @@ npm run dev
 - The project is intended to be installable as a PWA on mobile devices (Add to Home Screen) for real-world tea table usage.
 - Before demo submission, verify install prompts and home-screen launch behavior on at least one Android or iOS device.
 
-## Validation
+## Reproducible Testing For Judges
 
-Run the project checks before recording your demo or deploying:
+Use the following steps to reproduce the core hackathon requirements locally.
+
+### 1. Install and configure
 
 ```bash
-npm run typecheck
-npm run build
+npm install
+cp .env.example .env.local
 ```
+
+Set the following values in `.env.local`:
+
+```bash
+GEMINI_API_KEY=your_actual_gemini_api_key
+NEXT_PUBLIC_GEMINI_LIVE_MODEL=gemini-2.5-flash-native-audio-preview-12-2025
+```
+
+### 2. Start the app
+
+```bash
+npm run dev
+```
+
+Open `http://localhost:3000`, then enter the live experience at `http://localhost:3000/live`.
+
+### 3. Verify the live multimodal agent
+
+1. Allow microphone and camera access when prompted.
+2. Confirm the live UI loads without a chat box and shows the responsive orb/dock interface.
+3. Start a live session.
+4. In browser DevTools, confirm `POST /api/live/token` returns `200` before the browser opens the Gemini Live connection.
+5. Speak to the agent and confirm you hear native audio responses back.
+6. Interrupt the model while it is speaking to verify barge-in behavior works.
+7. Show tea ware or a tea package to the camera and confirm the response uses visual context.
+8. Ask for a brew recommendation or tea profile and confirm the tea guidance/tool response appears.
+
+Expected result: the browser requests an ephemeral token from the Next.js server, then the browser connects directly to Gemini Live over WebSockets for audio and vision streaming.
+
+### 4. Verify PWA installability
+
+1. While the dev server is running, open Chrome DevTools -> `Application`.
+2. Confirm the manifest is detected and the app icons resolve from `/manifest.webmanifest`.
+3. Confirm a service worker is registered at `/sw.js`.
+4. On mobile Chrome or Safari, use `Add to Home Screen` and launch the installed app.
+5. Confirm the app opens in a standalone window and the live page remains usable on a phone-sized screen.
+
+Expected result: ChaGather is installable as a mobile-friendly PWA with a manifest, icons, and service worker registration.
+
+### 5. Run repository validation commands
+
+Run these sequentially before recording the demo or deploying:
+
+```bash
+npm run build
+npm run typecheck
+```
+
+Expected result: both commands exit successfully. Run them one after the other so `.next` build artifacts are generated consistently.
 
 ## Google Cloud Run Deployment
 
