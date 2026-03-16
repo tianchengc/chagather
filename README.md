@@ -152,17 +152,7 @@ export GEMINI_API_KEY="your_actual_gemini_api_key"
 ./deploy.sh
 ```
 
-## Architecture Diagrams (Submission-Ready)
-
-For hackathon submission, upload these files to your image/file gallery or share their deployed URLs directly:
-
-- `public/architecture/live-session-flow.mmd`
-- `public/architecture/cloud-deployment.mmd`
-
-If your Cloud Run domain is `https://YOUR_CLOUD_RUN_URL`, the diagram URLs are:
-
-- `https://YOUR_CLOUD_RUN_URL/architecture/live-session-flow.mmd`
-- `https://YOUR_CLOUD_RUN_URL/architecture/cloud-deployment.mmd`
+## Architecture Diagrams
 
 ### Diagram 1: Live Session Runtime Flow
 
