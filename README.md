@@ -199,3 +199,6 @@ flowchart TD
 
     B -->|Optional tea context UI state| LOCAL[Client-side tea profile + controls]
 ```
+
+## 🚀 Automated Cloud Deployment
+This project utilizes Continuous Integration and Continuous Deployment (CI/CD). The GitHub repository is natively integrated with **Google Cloud Build**. Every time code is pushed to the `main` branch, Cloud Build automatically detects the changes, containerizes the Next.js application, and deploys the new revision directly to **Google Cloud Run** in the `us-east4` region.
