@@ -18,7 +18,11 @@ import {
   LIVE_API_VERSION,
   MASTER_CHADY_LIVE_CONFIG,
 } from "@/lib/live/masterChady";
-import { fetchTeaData, resolveBrewTimerSeconds } from "@/lib/live/tea";
+import {
+  createFallbackBrewContext,
+  normalizeBrewContext,
+  resolveBrewTimerSeconds,
+} from "@/lib/live/tea";
 import type {
   BrewContext,
   EphemeralTokenResponse,
@@ -111,6 +115,43 @@ function parseFunctionArgs(args: unknown) {
   }
 
   return {};
+}
+
+async function fetchDynamicTeaProfile(params: {
+  leafObservation?: string;
+  packageText?: string;
+  teaName?: string;
+  userNotes?: string;
+}) {
+  const response = await fetch("/api/tea/profile", {
+    body: JSON.stringify(params),
+    cache: "no-store",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    method: "POST",
+  });
+
+  const payload = (await response.json().catch(() => null)) as
+    | { brewContext?: Partial<BrewContext>; error?: string }
+    | Partial<BrewContext>
+    | null;
+  const payloadBrewContext = (
+    payload && typeof payload === "object" && "brewContext" in payload ? payload.brewContext : payload
+  ) as Partial<BrewContext> | null | undefined;
+
+  if (!response.ok) {
+    const fallback = normalizeBrewContext(payloadBrewContext ?? null, params.teaName);
+    const errorMessage =
+      payload && typeof payload === "object" && "error" in payload && typeof payload.error === "string"
+        ? payload.error
+        : "Failed to load tea profile.";
+    throw Object.assign(new Error(errorMessage), {
+      fallbackBrewContext: fallback,
+    });
+  }
+
+  return normalizeBrewContext(payloadBrewContext ?? null, params.teaName);
 }
 
 type UseLiveSessionOptions = {
@@ -298,7 +339,7 @@ export function useLiveSession({
       const baseContext =
         existingContext && isSameTea
           ? existingContext
-          : fetchTeaData(requestedTeaName ?? existingContext?.teaName ?? "House Tea");
+          : createFallbackBrewContext(requestedTeaName ?? existingContext?.teaName);
 
       const nextContext: BrewContext = {
         ...baseContext,
@@ -628,7 +669,7 @@ export function useLiveSession({
   );
 
   const handleFunctionCalls = useCallback(
-    (functionCalls: Array<any>) => {
+    async (functionCalls: Array<any>) => {
       if (functionCalls.length === 0) {
         return;
       }
@@ -644,21 +685,73 @@ export function useLiveSession({
         if (call?.name === "getTeaProfile") {
           const args = parseFunctionArgs(call?.args);
           const teaNameRaw = args.teaName;
+          const packageTextRaw = args.packageText;
+          const leafObservationRaw = args.leafObservation;
+          const userNotesRaw = args.userNotes;
+          const teaName = typeof teaNameRaw === "string" ? teaNameRaw.trim() : "";
+          const packageText =
+            typeof packageTextRaw === "string" && packageTextRaw.trim().length > 0
+              ? packageTextRaw.trim()
+              : undefined;
+          const leafObservation =
+            typeof leafObservationRaw === "string" && leafObservationRaw.trim().length > 0
+              ? leafObservationRaw.trim()
+              : undefined;
+          const userNotes =
+            typeof userNotesRaw === "string" && userNotesRaw.trim().length > 0
+              ? userNotesRaw.trim()
+              : undefined;
 
-          if (typeof teaNameRaw !== "string" || teaNameRaw.trim().length === 0) {
+          if (!teaName && !packageText && !leafObservation && !userNotes) {
             functionResponses.push({
               id: call?.id,
               name: "getTeaProfile",
               response: {
-                error: "Missing teaName. Ask the user to confirm the tea before giving brew guidance.",
-                status: "missing_tea_name",
+                error:
+                  "Need at least one tea clue. Ask the user to say the tea name or show the package and dry leaves more clearly.",
+                status: "missing_observation",
               },
             });
             continue;
           }
 
-          const teaName = teaNameRaw.trim();
-          const teaProfile = fetchTeaData(teaName);
+          let teaProfile: BrewContext;
+          try {
+            teaProfile = await fetchDynamicTeaProfile({
+              leafObservation,
+              packageText,
+              teaName: teaName || undefined,
+              userNotes,
+            });
+          } catch (profileError) {
+            console.error("Failed to fetch dynamic tea profile", profileError);
+            const fallback =
+              profileError &&
+              typeof profileError === "object" &&
+              "fallbackBrewContext" in profileError &&
+              profileError.fallbackBrewContext
+                ? normalizeBrewContext(
+                    profileError.fallbackBrewContext as Partial<BrewContext>,
+                    teaName || undefined,
+                  )
+                : createFallbackBrewContext(teaName || undefined);
+
+            showBrewDrawer(fallback);
+            functionResponses.push({
+              id: call?.id,
+              name: "getTeaProfile",
+              response: {
+                ...fallback,
+                error:
+                  profileError instanceof Error
+                    ? profileError.message
+                    : "Dynamic tea profile lookup failed.",
+                status: "fallback",
+              },
+            });
+            continue;
+          }
+
           const currentTea = latestBrewContextRef.current;
           const nextTeaProfile: BrewContext = {
             ...teaProfile,
@@ -682,9 +775,10 @@ export function useLiveSession({
           const teaNameRaw = args.teaName;
           const secondsRaw = Number(args.seconds);
           const teaName = typeof teaNameRaw === "string" ? teaNameRaw : undefined;
-          const seconds = teaName
-            ? fetchTeaData(teaName).brewSeconds
-            : resolveBrewTimerSeconds(undefined, Number.isFinite(secondsRaw) ? secondsRaw : undefined);
+          const seconds = resolveBrewTimerSeconds({
+            brewContext: latestBrewContextRef.current,
+            seconds: Number.isFinite(secondsRaw) ? secondsRaw : undefined,
+          });
           const nextBrewContext = updateBrewContextForTimer({ seconds, teaName });
 
           onBrewTimerStart(seconds);
@@ -852,7 +946,7 @@ export function useLiveSession({
           },
           onmessage: (message: any) => {
             if (connectionVersionRef.current !== nextVersion) return;
-            handleFunctionCalls(message?.toolCall?.functionCalls ?? []);
+            void handleFunctionCalls(message?.toolCall?.functionCalls ?? []);
 
             const parts = message?.serverContent?.modelTurn?.parts ?? [];
             for (const part of parts) {

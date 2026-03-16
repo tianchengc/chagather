@@ -3,6 +3,7 @@ export type BrewContext = {
   currentInfusion: number;
   ratio: string;
   tcmBenefit: string;
+  teaCategory?: string;
   teaName: string;
   temperature: string;
 };

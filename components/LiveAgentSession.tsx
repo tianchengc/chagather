@@ -142,13 +142,7 @@ export default function LiveAgentSession({ onExit }: LiveAgentSessionProps) {
           ref={cameraVideoRef}
           autoPlay
           className={`absolute inset-0 h-full w-full object-cover transition duration-700 ${
-            hasMediaAccess && isCameraEnabled
-              ? transportDiagnostics.cameraFacingMode === "user"
-                ? "[transform:scaleX(-1.04)] opacity-80"
-                : "opacity-80"
-              : transportDiagnostics.cameraFacingMode === "user"
-                ? "[transform:scaleX(-1.02)] opacity-0"
-                : "opacity-0"
+            hasMediaAccess && isCameraEnabled ? "scale-x-[-1] opacity-80" : "scale-x-[-1] opacity-0"
           }`}
           muted
           playsInline

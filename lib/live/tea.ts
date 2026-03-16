@@ -2,62 +2,82 @@ import type { BrewContext } from "./types";
 
 const DEFAULT_BREW_SECONDS = 20;
 
-const TEA_PROFILES: Record<string, BrewContext> = {
-  tieguanyin: {
-    brewSeconds: 20,
-    currentInfusion: 0,
-    ratio: "5g to 100ml",
-    tcmBenefit: "Warms the stomach and supports digestion.",
-    teaName: "Tieguanyin",
-    temperature: "95°C",
-  },
-  "da hong pao": {
-    brewSeconds: 15,
-    currentInfusion: 0,
-    ratio: "6g to 110ml",
-    tcmBenefit: "Grounding warmth and post-meal comfort.",
-    teaName: "Da Hong Pao",
-    temperature: "100°C",
-  },
-  shoumei: {
-    brewSeconds: 30,
-    currentInfusion: 0,
-    ratio: "4g to 120ml",
-    tcmBenefit: "Gentle cooling balance and throat soothing.",
-    teaName: "Shoumei",
-    temperature: "90°C",
-  },
-  sencha: {
-    brewSeconds: 45,
-    currentInfusion: 0,
-    ratio: "4g to 120ml",
-    tcmBenefit: "Refreshes the mind and supports gentle clarity.",
-    teaName: "Sencha",
-    temperature: "75°C",
-  },
-};
-
-export function fetchTeaData(teaName: string) {
-  const normalized = teaName.trim().toLowerCase();
-  return (
-    TEA_PROFILES[normalized] ?? {
-      brewSeconds: DEFAULT_BREW_SECONDS,
-      currentInfusion: 0,
-      ratio: "5g to 100ml",
-      tcmBenefit: "Offers grounded comfort and calm focus.",
-      teaName: teaName.trim() || "House Tea",
-      temperature: "95°C",
-    }
-  );
+function toTitleCase(value: string) {
+  return value
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1).toLowerCase())
+    .join(" ");
 }
 
-export function resolveBrewTimerSeconds(teaName?: string, seconds?: number) {
-  if (typeof seconds === "number" && Number.isFinite(seconds) && seconds > 0) {
-    return Math.round(seconds);
+export function createFallbackBrewContext(teaName?: string): BrewContext {
+  const normalizedName = teaName?.trim();
+
+  return {
+    brewSeconds: DEFAULT_BREW_SECONDS,
+    currentInfusion: 0,
+    ratio: "5g to 100ml",
+    tcmBenefit: "Supports a calm, balanced tea session.",
+    teaCategory: "Unknown tea",
+    teaName: normalizedName ? toTitleCase(normalizedName) : "Observed tea",
+    temperature: "95C",
+  };
+}
+
+export function normalizeBrewContext(
+  value: Partial<BrewContext> | null | undefined,
+  fallbackTeaName?: string,
+): BrewContext {
+  const fallback = createFallbackBrewContext(fallbackTeaName);
+
+  const brewSecondsRaw = Number(value?.brewSeconds);
+  const brewSeconds =
+    Number.isFinite(brewSecondsRaw) && brewSecondsRaw > 0
+      ? Math.round(brewSecondsRaw)
+      : fallback.brewSeconds;
+
+  const teaName =
+    typeof value?.teaName === "string" && value.teaName.trim().length > 0
+      ? value.teaName.trim()
+      : fallback.teaName;
+
+  return {
+    brewSeconds,
+    currentInfusion:
+      typeof value?.currentInfusion === "number" && Number.isFinite(value.currentInfusion)
+        ? Math.max(0, Math.round(value.currentInfusion))
+        : fallback.currentInfusion,
+    ratio:
+      typeof value?.ratio === "string" && value.ratio.trim().length > 0
+        ? value.ratio.trim()
+        : fallback.ratio,
+    tcmBenefit:
+      typeof value?.tcmBenefit === "string" && value.tcmBenefit.trim().length > 0
+        ? value.tcmBenefit.trim()
+        : fallback.tcmBenefit,
+    teaCategory:
+      typeof value?.teaCategory === "string" && value.teaCategory.trim().length > 0
+        ? value.teaCategory.trim()
+        : fallback.teaCategory,
+    teaName,
+    temperature:
+      typeof value?.temperature === "string" && value.temperature.trim().length > 0
+        ? value.temperature.trim()
+        : fallback.temperature,
+  };
+}
+
+export function resolveBrewTimerSeconds(params: {
+  brewContext?: BrewContext | null;
+  seconds?: number;
+}) {
+  const secondsRaw = params.seconds;
+  if (typeof secondsRaw === "number" && Number.isFinite(secondsRaw) && secondsRaw > 0) {
+    return Math.round(secondsRaw);
   }
 
-  if (teaName) {
-    return fetchTeaData(teaName).brewSeconds;
+  if (params.brewContext?.brewSeconds && params.brewContext.brewSeconds > 0) {
+    return Math.round(params.brewContext.brewSeconds);
   }
 
   return DEFAULT_BREW_SECONDS;

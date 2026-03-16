@@ -27,6 +27,11 @@ export default function BrewContextPanel({
             Brewing Context
           </p>
           <h2 className="mt-2 font-serif text-2xl text-cha-cream">{brewContext.teaName}</h2>
+          {brewContext.teaCategory ? (
+            <p className="mt-2 text-[11px] uppercase tracking-[0.22em] text-cha-orange/76">
+              {brewContext.teaCategory}
+            </p>
+          ) : null}
           <p className="mt-2 text-xs uppercase tracking-[0.22em] text-cha-cream/56">
             {brewContext.currentInfusion > 0
               ? `Current Infusion #${brewContext.currentInfusion}`

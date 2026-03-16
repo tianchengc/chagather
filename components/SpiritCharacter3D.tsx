@@ -11,15 +11,10 @@ type SpiritCharacter3DProps = {
   audioVolume: number;
 };
 
-type DistortMaterialHandle = {
-  distort: number;
-  speed: number;
-};
-
 function SpiritCore({ audioVolume, isSpeaking }: SpiritCharacter3DProps) {
   const innerCoreRef = useRef<Mesh>(null);
   const outerShellRef = useRef<Mesh>(null);
-  const distortMaterialRef = useRef<DistortMaterialHandle>(null);
+  const distortMaterialRef = useRef<any>(null);
 
   useFrame((state, delta) => {
     const innerCore = innerCoreRef.current;
