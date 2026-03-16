@@ -134,6 +134,7 @@ export function useLiveSession({
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [isAiSpeaking, setIsAiSpeaking] = useState(false);
+  const [audioVolume, setAudioVolume] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
   const [hasMediaAccess, setHasMediaAccess] = useState(false);
   const [isMicEnabled, setIsMicEnabled] = useState(false);
@@ -327,6 +328,11 @@ export function useLiveSession({
       for (let i = 0; i < pcm.length; i += 1) {
         float[i] = pcm[i] / 0x8000;
       }
+      const chunkRms = computeRms(float);
+      const nextAudioVolume = 1 + Math.min(1.4, chunkRms * 8);
+      startTransition(() => {
+        setAudioVolume(nextAudioVolume);
+      });
 
       const audioBuffer = playbackContext.createBuffer(1, float.length, sampleRate);
       audioBuffer.copyToChannel(float, 0);
@@ -340,6 +346,9 @@ export function useLiveSession({
       playbackCursorRef.current = startAt + audioBuffer.duration;
       source.onended = () => {
         if (playbackCursorRef.current <= playbackContext.currentTime + 0.05) {
+          startTransition(() => {
+            setAudioVolume(1);
+          });
           clearSpeakingSoon(280);
         }
       };
@@ -506,6 +515,7 @@ export function useLiveSession({
     setIsConnected(false);
     setIsConnecting(false);
     setIsAiSpeaking(false);
+    setAudioVolume(1);
     setIsProcessing(false);
   }, [stopAndResetAudioGraph]);
 
@@ -1103,6 +1113,7 @@ export function useLiveSession({
   });
 
   return {
+    audioVolume,
     brewContext,
     cameraVideoRef,
     closeTeaSession,

@@ -12,9 +12,9 @@ import BrewContextPanel from "./BrewContextPanel";
 import BrewProgress from "./BrewProgress";
 import ChaGatherLogo from "./ChaGatherLogo";
 import PostSessionSummary from "./PostSessionSummary";
-import PresenceOrb from "./PresenceOrb";
 import SessionControls from "./SessionControls";
 import SessionSettings from "./SessionSettings";
+import SpiritCharacter3D from "./SpiritCharacter3D";
 
 type LiveAgentSessionProps = {
   onExit?: () => void;
@@ -52,6 +52,7 @@ export default function LiveAgentSession({ onExit }: LiveAgentSessionProps) {
   }));
 
   const {
+    audioVolume,
     brewContext,
     cameraVideoRef,
     closeTeaSession,
@@ -68,7 +69,6 @@ export default function LiveAgentSession({ onExit }: LiveAgentSessionProps) {
     isConnecting,
     isMicEnabled,
     isProcessing,
-    presenceState,
     reconnect,
     sessionCopy,
     transportDiagnostics,
@@ -303,7 +303,9 @@ export default function LiveAgentSession({ onExit }: LiveAgentSessionProps) {
             </div>
 
             <div className="order-1 flex min-w-0 justify-center xl:order-2 xl:justify-end">
-              <PresenceOrb presenceState={presenceState} />
+              <div className="relative h-[24rem] w-[20rem] md:h-[28rem] md:w-[24rem]">
+                <SpiritCharacter3D audioVolume={audioVolume} isSpeaking={isAiSpeaking} />
+              </div>
             </div>
           </div>
 
