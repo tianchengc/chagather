@@ -3,15 +3,6 @@
 Traditional Gongfu tea master meets Gemini Live multimodal AI. ChaGather turns a tea table into a calm, responsive ceremony space where users can speak naturally, show their setup through the camera, and receive grounded brewing guidance from a distinct tea master persona in real time.
 ![ChaGather Thumbnail](./public/thumbnail.png)
 
-## Why This Fits The Gemini Live Agent Challenge
-
-- Built on the official `@google/genai` SDK with the Gemini Live API.
-- Demonstrates native, bidirectional audio interaction instead of a text chat demo.
-- Streams live camera frames from the browser so the agent can respond with visual context.
-- Preserves a calm tea master persona with domain-specific tool responses for tea profiles.
-- Uses an interruption-friendly live session model so the conversation can stay fluid during a ceremony.
-- Includes a Google Cloud Run deployment script for the hackathon's automation bonus points.
-
 ## Experience Highlights
 
 - Invisible UI: no chat box, no message feed, no generic bot avatar.
@@ -161,12 +152,6 @@ export GEMINI_API_KEY="your_actual_gemini_api_key"
 ./deploy.sh
 ```
 
-## Proof Of Google Cloud Deployment
-
-Placeholder video link:
-
-`TODO: Add Devpost video or unlisted YouTube link showing Cloud Run deployment proof.`
-
 ## Architecture Diagrams (Submission-Ready)
 
 For hackathon submission, upload these files to your image/file gallery or share their deployed URLs directly:
@@ -224,28 +209,3 @@ flowchart TD
 
     B -->|Optional tea context UI state| LOCAL[Client-side tea profile + controls]
 ```
-
-## Demo Script Notes
-
-- Start with the tea table visible in the camera.
-- Show permission flow and the live blurred background.
-- Demonstrate natural voice conversation and interruption handling.
-- Ask for a tea recommendation or brewing profile to trigger the tea tool response.
-- Close by showing the deployed Cloud Run URL and architecture diagram in the submission.
-
-## Tech Stack
-
-- Next.js 15 App Router
-- React 19
-- Tailwind CSS
-- TypeScript
-- `@google/genai`
-- Google Cloud Run
-
-## Roadmap After Hackathon
-
-- Persist tea sessions and tea inventory for returning customers.
-- Add commerce-aware ceremony flows for physical tea product recommendations.
-- Expand multimodal guidance around teaware recognition and steep timing.
-
-Built for the Gemini Live Agent Challenge and designed to grow into a real tea business experience.
