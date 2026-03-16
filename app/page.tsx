@@ -23,9 +23,9 @@ const flow = ["Open /live", "Grant mic + camera", "Speak naturally", "Get brew i
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen text-cha-cream">
+    <main className="tea-page-background-soft min-h-screen text-cha-cream">
       <div className="absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(239,89,42,0.12),transparent_24%),radial-gradient(circle_at_82%_14%,rgba(181,208,195,0.12),transparent_22%),linear-gradient(180deg,#11211a_0%,#102019_52%,#0b1511_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(10,18,14,0.08),rgba(10,18,14,0.22))]" />
         <div className="absolute left-0 top-24 h-80 w-80 rounded-full bg-cha-orange/10 blur-3xl" />
         <div className="absolute bottom-10 right-0 h-72 w-72 rounded-full bg-cha-green-light/10 blur-3xl" />
       </div>

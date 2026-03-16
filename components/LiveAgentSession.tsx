@@ -126,7 +126,7 @@ export default function LiveAgentSession({ onExit }: LiveAgentSessionProps) {
   const summaryData = showSummary ? sessionSummary : null;
 
   return (
-    <section className="relative isolate min-h-screen overflow-hidden">
+    <section className="tea-page-background relative isolate min-h-screen overflow-hidden">
       <BackgroundAudio
         isEnabled={isMusicEnabled}
         isSessionActive={hasStartedSession || hasActivated}
@@ -137,6 +137,7 @@ export default function LiveAgentSession({ onExit }: LiveAgentSessionProps) {
       />
 
       <div className="absolute inset-0">
+        <div className="absolute inset-0 bg-[url('/background.png')] bg-cover bg-center bg-no-repeat opacity-100" />
         <video
           ref={cameraVideoRef}
           autoPlay
@@ -155,10 +156,10 @@ export default function LiveAgentSession({ onExit }: LiveAgentSessionProps) {
         <div className="cha-ambient-blob cha-ambient-blob--amber left-[-8%] top-[10%] h-[28rem] w-[28rem]" />
         <div className="cha-ambient-blob cha-ambient-blob--sage right-[-6%] top-[14%] h-[30rem] w-[30rem]" />
         <div className="cha-ambient-blob cha-ambient-blob--forest bottom-[-12%] left-[18%] h-[24rem] w-[40rem]" />
-        <div className="absolute inset-0 bg-cha-green-dark/30" />
-        <div className="cha-ambient-wash absolute inset-0" />
+        <div className="absolute inset-0 bg-cha-green-dark/12" />
+        <div className="cha-ambient-wash absolute inset-0 opacity-65" />
         <div className="cha-ambient-veils" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(239,89,42,0.14),transparent_24%),radial-gradient(circle_at_78%_14%,rgba(181,208,195,0.16),transparent_26%),radial-gradient(circle_at_center,transparent_20%,rgba(16,32,25,0.38)_58%,rgba(8,14,11,0.68)_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(239,89,42,0.1),transparent_24%),radial-gradient(circle_at_78%_14%,rgba(181,208,195,0.12),transparent_26%),radial-gradient(circle_at_center,transparent_24%,rgba(16,32,25,0.2)_58%,rgba(8,14,11,0.42)_100%)]" />
       </div>
 
       <div className="relative z-10 flex min-h-screen flex-col items-center justify-between px-4 py-5 sm:px-5 sm:py-6 md:px-10 md:py-10">
