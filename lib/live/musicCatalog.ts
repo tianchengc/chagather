@@ -1,49 +1,63 @@
 export type MusicTrack = {
+  fallbackVideoId: string;
   id: string;
   key: string;
   label: string;
-  videoId: string;
+  searchQuery: string;
 };
 
 export const MUSIC_TRACKS: Record<string, MusicTrack> = {
-  calm: {
-    id: "calm",
-    key: "calm",
+  bells: {
+    fallbackVideoId: "sjkrrmBnpGE",
+    id: "bells",
+    key: "bells",
     label: "Meditation Bells",
-    videoId: "sjkrrmBnpGE",
-  },
-  guqin: {
-    id: "guqin",
-    key: "guqin",
-    label: "Guqin Stillness",
-    videoId: "0LEE4SAj3rQ",
+    searchQuery: "meditation bells ambient youtube",
   },
   lofi: {
+    fallbackVideoId: "jfKfPfyJRdk",
     id: "lofi",
     key: "lofi",
     label: "Tea House Lo-Fi",
-    videoId: "jfKfPfyJRdk",
+    searchQuery: "tea house lofi ambient youtube",
+  },
+  flute: {
+    fallbackVideoId: "sjkrrmBnpGE",
+    id: "flute",
+    key: "flute",
+    label: "Bamboo Flute",
+    searchQuery: "bamboo flute meditation music youtube",
   },
   rain: {
+    fallbackVideoId: "mPZkdNFkNps",
     id: "rain",
     key: "rain",
     label: "Rain Meditation",
-    videoId: "mPZkdNFkNps",
+    searchQuery: "rain meditation ambient youtube",
   },
-  zen: {
-    id: "zen",
-    key: "zen",
-    label: "Zen Breath",
-    videoId: "XULUBg_ZcAU",
+  piano: {
+    fallbackVideoId: "jfKfPfyJRdk",
+    id: "piano",
+    key: "piano",
+    label: "Quiet Piano",
+    searchQuery: "gentle piano relaxation music youtube",
+  },
+  fireplace: {
+    fallbackVideoId: "mPZkdNFkNps",
+    id: "fireplace",
+    key: "fireplace",
+    label: "Fireplace Calm",
+    searchQuery: "fireplace crackling ambient relaxation youtube",
   },
 };
 
 const MUSIC_MATCHERS: Array<{ key: keyof typeof MUSIC_TRACKS; patterns: string[] }> = [
-  { key: "guqin", patterns: ["guqin", "guzheng", "chinese", "traditional", "tea house"] },
+  { key: "bells", patterns: ["bells", "temple", "bowl", "chime"] },
   { key: "lofi", patterns: ["lofi", "lo-fi", "study", "beats", "chill"] },
+  { key: "flute", patterns: ["flute", "bamboo", "zen flute", "shakuhachi"] },
   { key: "rain", patterns: ["rain", "water", "nature", "forest", "stream"] },
-  { key: "zen", patterns: ["zen", "meditation", "quiet", "healing", "breath"] },
-  { key: "calm", patterns: ["calm", "ambient", "peaceful", "soft", "relax"] },
+  { key: "piano", patterns: ["piano", "keys", "classical", "soft piano"] },
+  { key: "fireplace", patterns: ["fireplace", "fire", "hearth", "warm"] },
 ];
 
 export function resolveMusicTrack(vibe?: string, searchQuery?: string) {
@@ -55,5 +69,5 @@ export function resolveMusicTrack(vibe?: string, searchQuery?: string) {
     }
   }
 
-  return MUSIC_TRACKS.guqin;
+  return MUSIC_TRACKS.bells;
 }

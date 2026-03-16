@@ -1,5 +1,15 @@
-const CACHE_NAME = "chagather-cache-v1";
+const CACHE_NAME = "chagather-shell-v2";
 const STATIC_ASSETS = ["/", "/live", "/logo.png", "/favicon.png"];
+const NETWORK_ONLY_PREFIXES = ["/_next/", "/api/"];
+
+function isCacheableRequest(request) {
+  const url = new URL(request.url);
+  return (
+    request.method === "GET" &&
+    url.origin === self.location.origin &&
+    !NETWORK_ONLY_PREFIXES.some((prefix) => url.pathname.startsWith(prefix))
+  );
+}
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS)));
@@ -16,7 +26,17 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
-  if (event.request.method !== "GET") {
+  if (!isCacheableRequest(event.request)) {
+    return;
+  }
+
+  if (event.request.mode === "navigate") {
+    event.respondWith(
+      fetch(event.request).catch(async () => {
+        const cachedResponse = await caches.match(event.request);
+        return cachedResponse || caches.match("/");
+      }),
+    );
     return;
   }
 

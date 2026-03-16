@@ -1,10 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+
+type MusicPlaybackState = "idle" | "loading" | "playing" | "paused" | "error";
 
 type BackgroundAudioProps = {
   isEnabled: boolean;
   isSessionActive: boolean;
+  onPlaybackError?: (message: string) => void;
+  onPlaybackStateChange?: (state: MusicPlaybackState) => void;
   videoId: string;
   volume: number;
 };
@@ -27,14 +31,17 @@ function postCommand(
 export default function BackgroundAudio({
   isEnabled,
   isSessionActive,
+  onPlaybackError,
+  onPlaybackStateChange,
   videoId,
   volume,
 }: BackgroundAudioProps) {
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const [isFrameReady, setIsFrameReady] = useState(false);
 
   const src = useMemo(() => {
     const params = new URLSearchParams({
-      autoplay: isSessionActive && isEnabled ? "1" : "0",
+      autoplay: isEnabled ? "1" : "0",
       controls: "0",
       disablekb: "1",
       enablejsapi: "1",
@@ -49,39 +56,73 @@ export default function BackgroundAudio({
     });
 
     return `https://www.youtube.com/embed/${videoId}?${params.toString()}`;
-  }, [isEnabled, isSessionActive, videoId]);
+  }, [isEnabled, videoId]);
 
   useEffect(() => {
-    const frame = iframeRef.current;
-    if (!frame || !isSessionActive) {
+    setIsFrameReady(false);
+  }, [src]);
+
+  useEffect(() => {
+    if (!isSessionActive) {
+      onPlaybackStateChange?.("idle");
+      onPlaybackError?.("");
       return;
     }
 
-    const timeout = window.setTimeout(() => {
-      postCommand(frame, "setVolume", [volume]);
-      if (isEnabled) {
-        postCommand(frame, "unMute");
-        postCommand(frame, "playVideo");
-      } else {
-        postCommand(frame, "mute");
-        postCommand(frame, "pauseVideo");
-      }
-    }, 900);
+    if (!isFrameReady) {
+      onPlaybackStateChange?.(isEnabled ? "loading" : "paused");
+      return;
+    }
+
+    const frame = iframeRef.current;
+    if (!frame) {
+      onPlaybackError?.("The soundtrack player could not be initialized.");
+      return;
+    }
+
+    onPlaybackError?.("");
+    onPlaybackStateChange?.(isEnabled ? "loading" : "paused");
+
+    const schedule = isEnabled ? [150, 600, 1500, 3000] : [100, 400];
+    const timeouts = schedule.map((delayMs) =>
+      window.setTimeout(() => {
+        postCommand(frame, "setVolume", [volume]);
+        if (isEnabled) {
+          postCommand(frame, "unMute");
+          postCommand(frame, "playVideo");
+        } else {
+          postCommand(frame, "mute");
+          postCommand(frame, "pauseVideo");
+        }
+      }, delayMs),
+    );
+
+    const settleTimeout = window.setTimeout(() => {
+      onPlaybackStateChange?.(isEnabled ? "playing" : "paused");
+    }, isEnabled ? 900 : 250);
 
     return () => {
-      window.clearTimeout(timeout);
+      for (const timeout of timeouts) {
+        window.clearTimeout(timeout);
+      }
+      window.clearTimeout(settleTimeout);
     };
-  }, [isEnabled, isSessionActive, src, videoId, volume]);
+  }, [isEnabled, isFrameReady, isSessionActive, onPlaybackError, onPlaybackStateChange, volume]);
 
   if (!isSessionActive) {
     return null;
   }
 
   return (
-    <div aria-hidden="true" className="pointer-events-none fixed bottom-0 left-0 h-0 w-0 overflow-hidden opacity-0">
+    <div
+      aria-hidden="true"
+      className="pointer-events-none fixed bottom-0 left-0 h-px w-px overflow-hidden opacity-0"
+    >
       <iframe
         allow="autoplay; encrypted-media"
-        className="h-0 w-0 border-0"
+        className="h-px w-px border-0"
+        key={videoId}
+        onLoad={() => setIsFrameReady(true)}
         ref={iframeRef}
         src={src}
         title="ChaGather background audio"

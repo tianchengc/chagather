@@ -2,6 +2,7 @@
 
 type PostSessionSummaryProps = {
   durationSeconds: number;
+  onReturnToLobby: () => void;
   onRestart: () => void;
   reason: string;
   teaName?: string;
@@ -15,6 +16,7 @@ function formatDuration(totalSeconds: number) {
 
 export default function PostSessionSummary({
   durationSeconds,
+  onReturnToLobby,
   onRestart,
   reason,
   teaName,
@@ -49,13 +51,22 @@ export default function PostSessionSummary({
         </div>
       </div>
 
-      <button
-        className="mt-6 w-full rounded-full bg-cha-orange px-6 py-3 text-sm font-semibold text-cha-cream transition hover:bg-[#f17147] sm:w-auto"
-        onClick={onRestart}
-        type="button"
-      >
-        Begin New Tea Session
-      </button>
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+        <button
+          className="w-full rounded-full bg-cha-orange px-6 py-3 text-sm font-semibold text-cha-cream transition hover:bg-[#f17147] sm:w-auto"
+          onClick={onRestart}
+          type="button"
+        >
+          Begin New Tea Session
+        </button>
+        <button
+          className="w-full rounded-full border border-cha-green-light/18 bg-cha-cream/5 px-6 py-3 text-sm font-semibold text-cha-cream/82 transition hover:border-cha-green-light/28 hover:text-cha-cream sm:w-auto"
+          onClick={onReturnToLobby}
+          type="button"
+        >
+          Return to Tea Room
+        </button>
+      </div>
     </div>
   );
 }

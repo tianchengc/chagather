@@ -3,9 +3,11 @@
 type SessionControlsProps = {
   isCameraEnabled: boolean;
   isMicEnabled: boolean;
+  isMusicEnabled: boolean;
   onCameraToggle: () => void;
   onEndSession: () => void;
   onMicToggle: () => void;
+  onMusicToggle: () => void;
 };
 
 type IconProps = {
@@ -111,12 +113,33 @@ function EndSessionIcon({ className }: IconProps) {
   );
 }
 
+function MusicIcon({ className }: IconProps) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.8"
+      viewBox="0 0 24 24"
+    >
+      <path d="M9 18V6.6a1 1 0 0 1 .72-.96l7-2.1A1 1 0 0 1 18 4.5V15" />
+      <circle cx="7" cy="18" r="2.5" />
+      <circle cx="16" cy="15" r="2.5" />
+    </svg>
+  );
+}
+
 export default function SessionControls({
   isCameraEnabled,
   isMicEnabled,
+  isMusicEnabled,
   onCameraToggle,
   onEndSession,
   onMicToggle,
+  onMusicToggle,
 }: SessionControlsProps) {
   return (
     <div className="pointer-events-auto flex items-center gap-2 rounded-full border border-cha-green-light/15 bg-cha-green-dark/40 px-2.5 py-2.5 shadow-[0_24px_80px_rgba(5,14,10,0.32)] backdrop-blur-2xl md:gap-3 md:px-3 md:py-3">
@@ -152,6 +175,19 @@ export default function SessionControls({
         ) : (
           <CameraOffIcon className="h-5 w-5 md:h-6 md:w-6" />
         )}
+      </button>
+
+      <button
+        aria-label={isMusicEnabled ? "Turn soundscape off" : "Turn soundscape on"}
+        className={`flex h-12 w-12 items-center justify-center rounded-full border transition md:h-14 md:w-14 ${
+          isMusicEnabled
+            ? "border-cha-green-light/24 bg-cha-green-light/14 text-cha-cream"
+            : "border-cha-green-light/15 bg-cha-cream/6 text-cha-cream/72 hover:border-cha-green-light/28 hover:text-cha-cream"
+        }`}
+        onClick={onMusicToggle}
+        type="button"
+      >
+        <MusicIcon className="h-5 w-5 md:h-6 md:w-6" />
       </button>
 
       <button

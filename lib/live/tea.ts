@@ -5,6 +5,7 @@ const DEFAULT_BREW_SECONDS = 20;
 const TEA_PROFILES: Record<string, BrewContext> = {
   tieguanyin: {
     brewSeconds: 20,
+    currentInfusion: 0,
     ratio: "5g to 100ml",
     tcmBenefit: "Warms the stomach and supports digestion.",
     teaName: "Tieguanyin",
@@ -12,6 +13,7 @@ const TEA_PROFILES: Record<string, BrewContext> = {
   },
   "da hong pao": {
     brewSeconds: 15,
+    currentInfusion: 0,
     ratio: "6g to 110ml",
     tcmBenefit: "Grounding warmth and post-meal comfort.",
     teaName: "Da Hong Pao",
@@ -19,6 +21,7 @@ const TEA_PROFILES: Record<string, BrewContext> = {
   },
   shoumei: {
     brewSeconds: 30,
+    currentInfusion: 0,
     ratio: "4g to 120ml",
     tcmBenefit: "Gentle cooling balance and throat soothing.",
     teaName: "Shoumei",
@@ -26,6 +29,7 @@ const TEA_PROFILES: Record<string, BrewContext> = {
   },
   sencha: {
     brewSeconds: 45,
+    currentInfusion: 0,
     ratio: "4g to 120ml",
     tcmBenefit: "Refreshes the mind and supports gentle clarity.",
     teaName: "Sencha",
@@ -38,6 +42,7 @@ export function fetchTeaData(teaName: string) {
   return (
     TEA_PROFILES[normalized] ?? {
       brewSeconds: DEFAULT_BREW_SECONDS,
+      currentInfusion: 0,
       ratio: "5g to 100ml",
       tcmBenefit: "Offers grounded comfort and calm focus.",
       teaName: teaName.trim() || "House Tea",

@@ -73,6 +73,33 @@ export function computeRms(input: Float32Array) {
   return Math.sqrt(sum / input.length);
 }
 
+export function computePeakAbs(input: Float32Array) {
+  let peak = 0;
+  for (let i = 0; i < input.length; i += 1) {
+    const absolute = Math.abs(input[i]);
+    if (absolute > peak) {
+      peak = absolute;
+    }
+  }
+  return peak;
+}
+
+export function computeZeroCrossingRate(input: Float32Array) {
+  if (input.length < 2) {
+    return 0;
+  }
+
+  let crossings = 0;
+  for (let i = 1; i < input.length; i += 1) {
+    const previous = input[i - 1];
+    const current = input[i];
+    if ((previous >= 0 && current < 0) || (previous < 0 && current >= 0)) {
+      crossings += 1;
+    }
+  }
+  return crossings / (input.length - 1);
+}
+
 export function setTracksEnabled(tracks: MediaStreamTrack[], enabled: boolean) {
   for (const track of tracks) {
     track.enabled = enabled;

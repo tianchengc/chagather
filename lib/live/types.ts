@@ -1,5 +1,6 @@
 export type BrewContext = {
   brewSeconds: number;
+  currentInfusion: number;
   ratio: string;
   tcmBenefit: string;
   teaName: string;
@@ -15,9 +16,17 @@ export type TeaSessionSummary = {
 };
 
 export type LiveSession = {
+  sendClientContent: (params: {
+    turns?: Array<{
+      parts: Array<{ text: string }>;
+      role: "user";
+    }>;
+    turnComplete?: boolean;
+  }) => void;
   sendRealtimeInput: (params: {
     audio?: { data: string; mimeType: string };
     video?: { data: string; mimeType: string };
+    text?: string;
     audioStreamEnd?: boolean;
     activityStart?: Record<string, never>;
     activityEnd?: Record<string, never>;
@@ -41,4 +50,15 @@ export type LiveSession = {
 export type EphemeralTokenResponse = {
   error?: string;
   token?: string;
+};
+
+export type LiveTransportDiagnostics = {
+  audioChunksSent: number;
+  cameraFacingMode: string;
+  lastVideoFrameAt: number | null;
+  lastVideoFrameSize: {
+    height: number;
+    width: number;
+  } | null;
+  videoFramesSent: number;
 };

@@ -1,10 +1,12 @@
 "use client";
 
 import { GoogleGenAI } from "@google/genai";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { startTransition, useCallback, useEffect, useRef, useState } from "react";
 import {
   base64ToUint8,
+  computePeakAbs,
   computeRms,
+  computeZeroCrossingRate,
   downsampleBuffer,
   extractMimeSampleRate,
   floatTo16BitPCM,
@@ -21,11 +23,15 @@ import type {
   BrewContext,
   EphemeralTokenResponse,
   LiveSession,
+  LiveTransportDiagnostics,
   PresenceState,
   TeaSessionSummary,
 } from "@/lib/live/types";
 
 const TARGET_INPUT_RATE = 16000;
+const SNAP_COOLDOWN_MS = 900;
+const OPENING_GREETING_PROMPT =
+  "Begin the ceremony now. Greet the user as Master Chady in a calm, warm, wise tone and ask what tea they are preparing today.";
 
 function getPresenceState(params: {
   hasMediaAccess: boolean;
@@ -88,12 +94,32 @@ function formatLiveCloseReason(event: CloseEvent) {
   return `Live session closed unexpectedly (${code}).`;
 }
 
+function parseFunctionArgs(args: unknown) {
+  if (args && typeof args === "object" && !Array.isArray(args)) {
+    return args as Record<string, unknown>;
+  }
+
+  if (typeof args === "string") {
+    try {
+      const parsed = JSON.parse(args) as unknown;
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        return parsed as Record<string, unknown>;
+      }
+    } catch {
+      return {};
+    }
+  }
+
+  return {};
+}
+
 type UseLiveSessionOptions = {
   hasStartedSession: boolean;
   onBackgroundMusicChange: (params: { searchQuery?: string; vibe?: string }) => {
     id: string;
     label: string;
   };
+  onBackgroundMusicToggle: () => boolean;
   onBrewTimerStart: (seconds: number) => void;
   onSessionEnded: (summary: TeaSessionSummary) => void;
 };
@@ -101,6 +127,7 @@ type UseLiveSessionOptions = {
 export function useLiveSession({
   hasStartedSession,
   onBackgroundMusicChange,
+  onBackgroundMusicToggle,
   onBrewTimerStart,
   onSessionEnded,
 }: UseLiveSessionOptions) {
@@ -114,6 +141,13 @@ export function useLiveSession({
   const [brewContext, setBrewContext] = useState<BrewContext | null>(null);
   const [isBrewDrawerVisible, setIsBrewDrawerVisible] = useState(false);
   const [error, setError] = useState("");
+  const [transportDiagnostics, setTransportDiagnostics] = useState<LiveTransportDiagnostics>({
+    audioChunksSent: 0,
+    cameraFacingMode: "unknown",
+    lastVideoFrameAt: null,
+    lastVideoFrameSize: null,
+    videoFramesSent: 0,
+  });
 
   const sessionRef = useRef<LiveSession | null>(null);
   const micStreamRef = useRef<MediaStream | null>(null);
@@ -128,8 +162,7 @@ export function useLiveSession({
   const playbackCursorRef = useRef(0);
   const speakingTimeoutRef = useRef<number | null>(null);
   const processingTimeoutRef = useRef<number | null>(null);
-  const brewDrawerTimeoutRef = useRef<number | null>(null);
-  const brewDrawerCleanupRef = useRef<number | null>(null);
+  const openingGreetingTimeoutRef = useRef<number | null>(null);
   const isAiSpeakingRef = useRef(false);
   const isMicEnabledRef = useRef(false);
   const isCameraEnabledRef = useRef(false);
@@ -139,10 +172,17 @@ export function useLiveSession({
   const isToolCallPendingRef = useRef(false);
   const sessionStartedAtRef = useRef<number | null>(null);
   const latestBrewContextRef = useRef<BrewContext | null>(null);
+  const lastSnapDetectedAtRef = useRef(0);
+  const previousAudioPeakRef = useRef(0);
+  const previousAudioRmsRef = useRef(0);
+  const audioChunksSentRef = useRef(0);
+  const videoFramesSentRef = useRef(0);
+  const cameraFacingModeRef = useRef("unknown");
 
   useEffect(() => {
     isAiSpeakingRef.current = isAiSpeaking;
   }, [isAiSpeaking]);
+
 
   const syncMicState = useCallback((enabled: boolean) => {
     isMicEnabledRef.current = enabled;
@@ -173,24 +213,103 @@ export function useLiveSession({
   }, []);
 
   const showBrewDrawer = useCallback((nextContext: BrewContext) => {
-    if (brewDrawerTimeoutRef.current) {
-      window.clearTimeout(brewDrawerTimeoutRef.current);
-    }
-    if (brewDrawerCleanupRef.current) {
-      window.clearTimeout(brewDrawerCleanupRef.current);
-    }
-
     setBrewContext(nextContext);
     latestBrewContextRef.current = nextContext;
     setIsBrewDrawerVisible(true);
-
-    brewDrawerTimeoutRef.current = window.setTimeout(() => {
-      setIsBrewDrawerVisible(false);
-      brewDrawerCleanupRef.current = window.setTimeout(() => {
-        setBrewContext(null);
-      }, 380);
-    }, 6000);
   }, []);
+
+  const syncTransportDiagnostics = useCallback((nextState: Partial<LiveTransportDiagnostics>) => {
+    startTransition(() => {
+      setTransportDiagnostics((current) => ({
+        ...current,
+        ...nextState,
+      }));
+    });
+  }, []);
+
+  const syncCameraFacingMode = useCallback(
+    (facingMode?: string) => {
+      const nextFacingMode = facingMode?.trim() || "unknown";
+      cameraFacingModeRef.current = nextFacingMode;
+      syncTransportDiagnostics({ cameraFacingMode: nextFacingMode });
+    },
+    [syncTransportDiagnostics],
+  );
+
+  const handleDetectedSnap = useCallback(() => {
+    const now = Date.now();
+    if (now - lastSnapDetectedAtRef.current < SNAP_COOLDOWN_MS) {
+      return;
+    }
+
+    lastSnapDetectedAtRef.current = now;
+    onBackgroundMusicToggle();
+  }, [onBackgroundMusicToggle]);
+
+  const sendOpeningGreeting = useCallback(
+    (session: LiveSession, connectionVersion: number, attempt = 0) => {
+      if (connectionVersionRef.current !== connectionVersion) {
+        return;
+      }
+
+      if (!transportReadyRef.current) {
+        if (attempt >= 12) {
+          return;
+        }
+
+        openingGreetingTimeoutRef.current = window.setTimeout(() => {
+          sendOpeningGreeting(session, connectionVersion, attempt + 1);
+        }, 160);
+        return;
+      }
+
+      try {
+        setIsProcessing(true);
+        session.sendClientContent({
+          turnComplete: true,
+          turns: [
+            {
+              parts: [{ text: OPENING_GREETING_PROMPT }],
+              role: "user",
+            },
+          ],
+        });
+        clearProcessingSoon(2200);
+      } catch (sendError) {
+        console.error("Failed to send Master Chady opening greeting", sendError);
+      }
+    },
+    [clearProcessingSoon],
+  );
+
+  const updateBrewContextForTimer = useCallback(
+    (params: { seconds: number; teaName?: string }) => {
+      const { seconds, teaName } = params;
+      const existingContext = latestBrewContextRef.current;
+      const hasNamedTea = typeof teaName === "string" && teaName.trim().length > 0;
+      const requestedTeaName = hasNamedTea ? teaName.trim() : undefined;
+
+      const isSameTea =
+        existingContext && requestedTeaName
+          ? existingContext.teaName.trim().toLowerCase() === requestedTeaName.toLowerCase()
+          : Boolean(existingContext && !requestedTeaName);
+
+      const baseContext =
+        existingContext && isSameTea
+          ? existingContext
+          : fetchTeaData(requestedTeaName ?? existingContext?.teaName ?? "House Tea");
+
+      const nextContext: BrewContext = {
+        ...baseContext,
+        brewSeconds: seconds,
+        currentInfusion: Math.max(1, existingContext && isSameTea ? existingContext.currentInfusion + 1 : 1),
+      };
+
+      showBrewDrawer(nextContext);
+      return nextContext;
+    },
+    [showBrewDrawer],
+  );
 
   const playPcmChunk = useCallback(
     (base64Data: string, mimeType?: string) => {
@@ -275,6 +394,7 @@ export function useLiveSession({
       const liveTracks = micStreamRef.current.getTracks().filter((track) => track.readyState === "live");
       if (liveTracks.length > 0) {
         setHasMediaAccess(true);
+        syncCameraFacingMode(micStreamRef.current.getVideoTracks()[0]?.getSettings().facingMode);
         await attachMediaStream(micStreamRef.current);
         return micStreamRef.current;
       }
@@ -285,13 +405,14 @@ export function useLiveSession({
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: true,
-        video: { facingMode: "user" },
+        video: { facingMode: { ideal: "environment" } },
       });
 
       micStreamRef.current = stream;
       setHasMediaAccess(true);
       syncMicState(stream.getAudioTracks().some((track) => track.enabled));
       syncCameraState(stream.getVideoTracks().some((track) => track.enabled));
+      syncCameraFacingMode(stream.getVideoTracks()[0]?.getSettings().facingMode);
       await attachMediaStream(stream);
       return stream;
     } catch (err) {
@@ -303,7 +424,7 @@ export function useLiveSession({
       setHasMediaAccess(false);
       return null;
     }
-  }, [attachMediaStream, syncCameraState, syncMicState]);
+  }, [attachMediaStream, syncCameraFacingMode, syncCameraState, syncMicState]);
 
   const stopMediaStream = useCallback(() => {
     if (micStreamRef.current) {
@@ -320,7 +441,8 @@ export function useLiveSession({
     setHasMediaAccess(false);
     syncMicState(false);
     syncCameraState(false);
-  }, [syncCameraState, syncMicState]);
+    syncCameraFacingMode("unknown");
+  }, [syncCameraFacingMode, syncCameraState, syncMicState]);
 
   const fetchEphemeralToken = useCallback(async () => {
     const response = await fetch("/api/live/token", {
@@ -345,10 +467,19 @@ export function useLiveSession({
     transportReadyRef.current = false;
     isToolCallPendingRef.current = false;
     latestBrewContextRef.current = null;
+    previousAudioPeakRef.current = 0;
+    previousAudioRmsRef.current = 0;
+    audioChunksSentRef.current = 0;
+    videoFramesSentRef.current = 0;
 
     if (frameIntervalRef.current) {
       window.clearInterval(frameIntervalRef.current);
       frameIntervalRef.current = null;
+    }
+
+    if (openingGreetingTimeoutRef.current) {
+      window.clearTimeout(openingGreetingTimeoutRef.current);
+      openingGreetingTimeoutRef.current = null;
     }
 
     try {
@@ -396,6 +527,7 @@ export function useLiveSession({
     await disconnect();
     stopMediaStream();
     setIsBrewDrawerVisible(false);
+    setBrewContext(null);
   }, [disconnect, stopMediaStream]);
 
   const closeTeaSession = useCallback(
@@ -428,14 +560,37 @@ export function useLiveSession({
         }
 
         const channelData = event.inputBuffer.getChannelData(0);
-        if (computeRms(channelData) > 0.018 && !isAiSpeakingRef.current) {
+        const rms = computeRms(channelData);
+        if (rms > 0.018 && !isAiSpeakingRef.current) {
           setIsProcessing(true);
           clearProcessingSoon(1050);
+        }
+
+        const peak = computePeakAbs(channelData);
+        const zeroCrossingRate = computeZeroCrossingRate(channelData);
+        const crestFactor = peak / Math.max(rms, 0.0001);
+        const previousRms = previousAudioRmsRef.current;
+        const previousPeak = previousAudioPeakRef.current;
+        const isSharpTransient =
+          peak > 0.2 &&
+          rms > 0.012 &&
+          rms < 0.18 &&
+          crestFactor > 4.2 &&
+          zeroCrossingRate > 0.06 &&
+          previousRms < 0.035 &&
+          peak > previousPeak * 1.7;
+
+        previousAudioRmsRef.current = rms;
+        previousAudioPeakRef.current = peak;
+
+        if (!isAiSpeakingRef.current && isSharpTransient) {
+          handleDetectedSnap();
         }
 
         const downsampled = downsampleBuffer(channelData, captureContext.sampleRate, TARGET_INPUT_RATE);
         const pcm16 = floatTo16BitPCM(downsampled);
         const chunk = uint8ToBase64(new Uint8Array(pcm16.buffer));
+        audioChunksSentRef.current += 1;
 
         try {
           session.sendRealtimeInput({
@@ -444,6 +599,9 @@ export function useLiveSession({
               mimeType: `audio/pcm;rate=${TARGET_INPUT_RATE}`,
             },
           });
+          if (audioChunksSentRef.current % 12 === 0) {
+            syncTransportDiagnostics({ audioChunksSent: audioChunksSentRef.current });
+          }
         } catch (error) {
           transportReadyRef.current = false;
           console.error("Failed to send Gemini Live audio chunk", error);
@@ -456,7 +614,7 @@ export function useLiveSession({
       processor.connect(silentGain);
       silentGain.connect(captureContext.destination);
     },
-    [clearProcessingSoon, disconnect],
+    [clearProcessingSoon, disconnect, handleDetectedSnap, syncTransportDiagnostics],
   );
 
   const handleFunctionCalls = useCallback(
@@ -474,44 +632,69 @@ export function useLiveSession({
 
       for (const call of functionCalls) {
         if (call?.name === "getTeaProfile") {
-          const teaNameRaw = call?.args?.teaName;
-          const teaName = typeof teaNameRaw === "string" ? teaNameRaw : "Tieguanyin";
-          const teaProfile = fetchTeaData(teaName);
+          const args = parseFunctionArgs(call?.args);
+          const teaNameRaw = args.teaName;
 
-          showBrewDrawer(teaProfile);
+          if (typeof teaNameRaw !== "string" || teaNameRaw.trim().length === 0) {
+            functionResponses.push({
+              id: call?.id,
+              name: "getTeaProfile",
+              response: {
+                error: "Missing teaName. Ask the user to confirm the tea before giving brew guidance.",
+                status: "missing_tea_name",
+              },
+            });
+            continue;
+          }
+
+          const teaName = teaNameRaw.trim();
+          const teaProfile = fetchTeaData(teaName);
+          const currentTea = latestBrewContextRef.current;
+          const nextTeaProfile: BrewContext = {
+            ...teaProfile,
+            currentInfusion:
+              currentTea?.teaName.trim().toLowerCase() === teaProfile.teaName.trim().toLowerCase()
+                ? currentTea.currentInfusion
+                : 0,
+          };
+
+          showBrewDrawer(nextTeaProfile);
           functionResponses.push({
             id: call?.id,
             name: "getTeaProfile",
-            response: teaProfile,
+            response: nextTeaProfile,
           });
           continue;
         }
 
         if (call?.name === "start_brew_timer") {
-          const teaNameRaw = call?.args?.teaName;
-          const secondsRaw = Number(call?.args?.seconds);
+          const args = parseFunctionArgs(call?.args);
+          const teaNameRaw = args.teaName;
+          const secondsRaw = Number(args.seconds);
           const teaName = typeof teaNameRaw === "string" ? teaNameRaw : undefined;
-          const seconds = resolveBrewTimerSeconds(
-            teaName,
-            Number.isFinite(secondsRaw) ? secondsRaw : undefined,
-          );
+          const seconds = teaName
+            ? fetchTeaData(teaName).brewSeconds
+            : resolveBrewTimerSeconds(undefined, Number.isFinite(secondsRaw) ? secondsRaw : undefined);
+          const nextBrewContext = updateBrewContextForTimer({ seconds, teaName });
 
           onBrewTimerStart(seconds);
           functionResponses.push({
             id: call?.id,
             name: "start_brew_timer",
             response: {
+              currentInfusion: nextBrewContext?.currentInfusion ?? 1,
               seconds,
               status: "started",
-              teaName: teaName ?? "Current tea",
+              teaName: nextBrewContext?.teaName ?? teaName ?? "Current tea",
             },
           });
           continue;
         }
 
         if (call?.name === "change_background_music") {
-          const searchQueryRaw = call?.args?.search_query;
-          const vibeRaw = call?.args?.vibe;
+          const args = parseFunctionArgs(call?.args);
+          const searchQueryRaw = args.search_query;
+          const vibeRaw = args.vibe;
           const track = onBackgroundMusicChange({
             searchQuery: typeof searchQueryRaw === "string" ? searchQueryRaw : undefined,
             vibe: typeof vibeRaw === "string" ? vibeRaw : undefined,
@@ -529,8 +712,23 @@ export function useLiveSession({
           continue;
         }
 
+        if (call?.name === "toggle_music") {
+          const isMusicEnabled = onBackgroundMusicToggle();
+
+          functionResponses.push({
+            id: call?.id,
+            name: "toggle_music",
+            response: {
+              isPlaying: isMusicEnabled,
+              status: isMusicEnabled ? "playing" : "stopped",
+            },
+          });
+          continue;
+        }
+
         if (call?.name === "end_tea_session") {
-          const reasonRaw = call?.args?.reason;
+          const args = parseFunctionArgs(call?.args);
+          const reasonRaw = args.reason;
           const reason =
             typeof reasonRaw === "string" && reasonRaw.trim().length > 0
               ? reasonRaw.trim()
@@ -565,7 +763,14 @@ export function useLiveSession({
         isToolCallPendingRef.current = false;
       }
     },
-    [closeTeaSession, onBackgroundMusicChange, onBrewTimerStart, showBrewDrawer],
+    [
+      closeTeaSession,
+      onBackgroundMusicChange,
+      onBackgroundMusicToggle,
+      onBrewTimerStart,
+      showBrewDrawer,
+      updateBrewContextForTimer,
+    ],
   );
 
   const connect = useCallback(async () => {
@@ -576,7 +781,18 @@ export function useLiveSession({
     transportReadyRef.current = false;
     isToolCallPendingRef.current = false;
     latestBrewContextRef.current = null;
+    previousAudioPeakRef.current = 0;
+    previousAudioRmsRef.current = 0;
+    audioChunksSentRef.current = 0;
+    videoFramesSentRef.current = 0;
     setError("");
+    syncTransportDiagnostics({
+      audioChunksSent: 0,
+      cameraFacingMode: cameraFacingModeRef.current,
+      lastVideoFrameAt: null,
+      lastVideoFrameSize: null,
+      videoFramesSent: 0,
+    });
 
     if (sessionRef.current || captureContextRef.current || playbackContextRef.current) {
       await disconnect();
@@ -687,6 +903,7 @@ export function useLiveSession({
 
       sessionRef.current = session as LiveSession;
       startCaptureStreaming(session as LiveSession);
+      sendOpeningGreeting(session as LiveSession, nextVersion);
     } catch (err) {
       transportReadyRef.current = false;
       const message =
@@ -701,7 +918,6 @@ export function useLiveSession({
   }, [
     clearProcessingSoon,
     clearSpeakingSoon,
-    closeTeaSession,
     disconnect,
     ensureMediaStream,
     fetchEphemeralToken,
@@ -709,8 +925,10 @@ export function useLiveSession({
     isConnected,
     isConnecting,
     playPcmChunk,
+    sendOpeningGreeting,
     startCaptureStreaming,
     stopAndResetAudioGraph,
+    syncTransportDiagnostics,
     syncMicState,
   ]);
 
@@ -759,6 +977,7 @@ export function useLiveSession({
     if (!hadStream) {
       setTracksEnabled(videoTracks, true);
       syncCameraState(true);
+      syncCameraFacingMode(videoTracks[0]?.getSettings().facingMode);
 
       const audioTracks = stream.getAudioTracks();
       if (audioTracks.length > 0) {
@@ -771,7 +990,8 @@ export function useLiveSession({
     const nextEnabled = !isCameraEnabledRef.current;
     setTracksEnabled(videoTracks, nextEnabled);
     syncCameraState(nextEnabled);
-  }, [ensureMediaStream, syncCameraState, syncMicState]);
+    syncCameraFacingMode(videoTracks[0]?.getSettings().facingMode);
+  }, [ensureMediaStream, syncCameraFacingMode, syncCameraState, syncMicState]);
 
   const reconnect = useCallback(async () => {
     if (reconnectingRef.current || isConnecting) {
@@ -791,11 +1011,8 @@ export function useLiveSession({
     return () => {
       void disconnect().finally(() => {
         stopMediaStream();
-        if (brewDrawerTimeoutRef.current) {
-          window.clearTimeout(brewDrawerTimeoutRef.current);
-        }
-        if (brewDrawerCleanupRef.current) {
-          window.clearTimeout(brewDrawerCleanupRef.current);
+        if (openingGreetingTimeoutRef.current) {
+          window.clearTimeout(openingGreetingTimeoutRef.current);
         }
       });
     };
@@ -823,8 +1040,8 @@ export function useLiveSession({
         return;
       }
 
-      const width = video.videoWidth || 320;
-      const height = video.videoHeight || 180;
+      const width = Math.max(video.videoWidth || 320, 640);
+      const height = Math.max(video.videoHeight || 180, 360);
       canvas.width = width;
       canvas.height = height;
 
@@ -834,8 +1051,10 @@ export function useLiveSession({
       }
 
       ctx.drawImage(video, 0, 0, width, height);
-      const frameDataUrl = canvas.toDataURL("image/jpeg", 0.75);
+      const frameDataUrl = canvas.toDataURL("image/jpeg", 0.82);
       const frameBase64 = frameDataUrl.replace(/^data:image\/jpeg;base64,/, "");
+      videoFramesSentRef.current += 1;
+      const sentAt = Date.now();
 
       try {
         session.sendRealtimeInput({
@@ -844,13 +1063,18 @@ export function useLiveSession({
             mimeType: "image/jpeg",
           },
         });
+        syncTransportDiagnostics({
+          lastVideoFrameAt: sentAt,
+          lastVideoFrameSize: { height, width },
+          videoFramesSent: videoFramesSentRef.current,
+        });
       } catch (error) {
         transportReadyRef.current = false;
         console.error("Failed to send Gemini Live video frame", error);
         setError("Video frame streaming interrupted.");
         void disconnect();
       }
-    }, 1000);
+    }, 700);
 
     return () => {
       if (frameIntervalRef.current) {
@@ -899,5 +1123,6 @@ export function useLiveSession({
     presenceState,
     reconnect,
     sessionCopy,
+    transportDiagnostics,
   };
 }

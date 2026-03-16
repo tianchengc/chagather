@@ -8,6 +8,23 @@ export default function PWARegister() {
       return;
     }
 
+    if (process.env.NODE_ENV !== "production") {
+      void navigator.serviceWorker
+        .getRegistrations()
+        .then(async (registrations) => {
+          await Promise.all(registrations.map((registration) => registration.unregister()));
+
+          if ("caches" in window) {
+            const cacheKeys = await caches.keys();
+            await Promise.all(cacheKeys.map((key) => caches.delete(key)));
+          }
+        })
+        .catch((error) => {
+          console.error("Failed to clear service workers in development", error);
+        });
+      return;
+    }
+
     navigator.serviceWorker.register("/sw.js").catch((error) => {
       console.error("Service worker registration failed", error);
     });

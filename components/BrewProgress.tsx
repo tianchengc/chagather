@@ -4,16 +4,20 @@ import { useEffect, useState } from "react";
 
 type BrewProgressProps = {
   duration: number;
+  infusion?: number;
   isActive: boolean;
   onComplete?: () => void;
   runId?: number;
+  teaName?: string;
 };
 
 export default function BrewProgress({
   duration,
+  infusion,
   isActive,
   onComplete,
   runId,
+  teaName,
 }: BrewProgressProps) {
   const [remaining, setRemaining] = useState(duration);
 
@@ -53,6 +57,10 @@ export default function BrewProgress({
         <div>
           <p className="text-[10px] uppercase tracking-[0.28em] text-cha-green-light/80">
             Brew Timer
+          </p>
+          <p className="mt-2 text-sm text-cha-cream/70">
+            {teaName ? teaName : "Current tea"}
+            {typeof infusion === "number" && infusion > 0 ? ` • Infusion #${infusion}` : ""}
           </p>
           <p className="mt-2 font-serif text-3xl text-cha-cream">{remaining}s</p>
         </div>

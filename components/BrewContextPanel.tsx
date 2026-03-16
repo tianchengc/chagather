@@ -27,9 +27,14 @@ export default function BrewContextPanel({
             Brewing Context
           </p>
           <h2 className="mt-2 font-serif text-2xl text-cha-cream">{brewContext.teaName}</h2>
+          <p className="mt-2 text-xs uppercase tracking-[0.22em] text-cha-cream/56">
+            {brewContext.currentInfusion > 0
+              ? `Current Infusion #${brewContext.currentInfusion}`
+              : "Ready for Infusion #1"}
+          </p>
         </div>
         <div className="rounded-full border border-cha-green-light/18 bg-cha-green-light/12 px-3 py-1 text-xs text-cha-cream">
-          {brewContext.brewSeconds}s
+          Recommended {brewContext.brewSeconds}s
         </div>
       </div>
 

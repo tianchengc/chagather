@@ -5,6 +5,7 @@ import { useCallback, useState } from "react";
 import { useBackgroundMusic } from "@/hooks/useBackgroundMusic";
 import { useBrewTimer } from "@/hooks/useBrewTimer";
 import { useLiveSession } from "@/hooks/useLiveSession";
+import { MUSIC_TRACKS } from "@/lib/live/musicCatalog";
 import type { TeaSessionSummary } from "@/lib/live/types";
 import BackgroundAudio from "./BackgroundAudio";
 import BrewContextPanel from "./BrewContextPanel";
@@ -19,21 +20,36 @@ type LiveAgentSessionProps = {
   onExit?: () => void;
 };
 
+const SHOW_VISION_DEBUG = process.env.NEXT_PUBLIC_ENABLE_VISION_DEBUG === "true";
+
 export default function LiveAgentSession({ onExit }: LiveAgentSessionProps) {
   const [hasStartedSession, setHasStartedSession] = useState(false);
   const [sessionSummary, setSessionSummary] = useState<TeaSessionSummary | null>(null);
   const { brewTime, isBrewing, startBrewTimer, stopBrewTimer, timerRunId } = useBrewTimer();
   const {
     activeTrack,
+    activeTrackId,
     changeMusic,
+    handlePlaybackError,
+    handlePlaybackStateChange,
     hasActivated,
     isMusicEnabled,
+    isTrackPickerOpen,
     musicVolume,
+    playbackError,
+    playbackState,
+    selectTrack,
+    setIsTrackPickerOpen,
     setMusicVolume,
     startMusic,
     stopMusic,
     toggleMusic,
   } = useBackgroundMusic();
+
+  const soundscapeTracks = Object.values(MUSIC_TRACKS).map((track) => ({
+    id: track.id,
+    label: track.label,
+  }));
 
   const {
     brewContext,
@@ -55,9 +71,11 @@ export default function LiveAgentSession({ onExit }: LiveAgentSessionProps) {
     presenceState,
     reconnect,
     sessionCopy,
+    transportDiagnostics,
   } = useLiveSession({
     hasStartedSession,
     onBackgroundMusicChange: changeMusic,
+    onBackgroundMusicToggle: toggleMusic,
     onBrewTimerStart: startBrewTimer,
     onSessionEnded: (summary) => {
       void stopMusic();
@@ -72,6 +90,11 @@ export default function LiveAgentSession({ onExit }: LiveAgentSessionProps) {
     await startMusic();
     await connect();
   }, [connect, startMusic]);
+
+  const handleReturnToTeaRoom = useCallback(() => {
+    setSessionSummary(null);
+    setHasStartedSession(false);
+  }, []);
 
   const handleMicPrimaryAction = useCallback(async () => {
     if (!hasStartedSession && !isConnected && !isConnecting) {
@@ -106,7 +129,9 @@ export default function LiveAgentSession({ onExit }: LiveAgentSessionProps) {
     <section className="relative isolate min-h-screen overflow-hidden">
       <BackgroundAudio
         isEnabled={isMusicEnabled}
-        isSessionActive={hasActivated}
+        isSessionActive={hasStartedSession || hasActivated}
+        onPlaybackError={handlePlaybackError}
+        onPlaybackStateChange={handlePlaybackStateChange}
         videoId={activeTrack.videoId}
         volume={musicVolume}
       />
@@ -117,8 +142,12 @@ export default function LiveAgentSession({ onExit }: LiveAgentSessionProps) {
           autoPlay
           className={`absolute inset-0 h-full w-full object-cover transition duration-700 ${
             hasMediaAccess && isCameraEnabled
-              ? "[transform:scaleX(-1.04)] opacity-80"
-              : "[transform:scaleX(-1.02)] opacity-0"
+              ? transportDiagnostics.cameraFacingMode === "user"
+                ? "[transform:scaleX(-1.04)] opacity-80"
+                : "opacity-80"
+              : transportDiagnostics.cameraFacingMode === "user"
+                ? "[transform:scaleX(-1.02)] opacity-0"
+                : "opacity-0"
           }`}
           muted
           playsInline
@@ -196,6 +225,7 @@ export default function LiveAgentSession({ onExit }: LiveAgentSessionProps) {
                 {summaryData ? (
                   <PostSessionSummary
                     durationSeconds={summaryData.durationSeconds}
+                    onReturnToLobby={handleReturnToTeaRoom}
                     onRestart={() => void handleStartSession()}
                     reason={summaryData.reason}
                     teaName={summaryData.teaName}
@@ -224,7 +254,7 @@ export default function LiveAgentSession({ onExit }: LiveAgentSessionProps) {
                         Start Session
                       </button>
                       <p className="text-xs uppercase tracking-[0.24em] text-cha-green-light/54">
-                        Camera + mic + background YouTube audio engage after your tap
+                        Music can play here even before you start a live session
                       </p>
                     </div>
                   </div>
@@ -285,34 +315,47 @@ export default function LiveAgentSession({ onExit }: LiveAgentSessionProps) {
                 <SessionControls
                   isCameraEnabled={isCameraEnabled}
                   isMicEnabled={isMicEnabled}
+                  isMusicEnabled={isMusicEnabled}
                   onCameraToggle={() => void handleCameraToggle()}
                   onEndSession={() => void handleEndSession()}
                   onMicToggle={() => void handleMicPrimaryAction()}
+                  onMusicToggle={() => void toggleMusic()}
                 />
               </div>
 
-              <div className="cha-surface rounded-[1.5rem] p-4 text-left">
-                <p className="text-[10px] uppercase tracking-[0.28em] text-cha-green-light/64">
-                  Soundscape
-                </p>
-                <p className="mt-2 font-serif text-2xl text-cha-cream">{activeTrack.label}</p>
-                <p className="mt-2 text-sm leading-relaxed text-cha-cream/68">
-                  A quiet layer behind Master Chady, tuned separately from the live voice.
-                </p>
-              </div>
+              {SHOW_VISION_DEBUG ? (
+                <div className="cha-surface rounded-[1.5rem] p-4 text-left">
+                  <p className="text-[10px] uppercase tracking-[0.28em] text-cha-green-light/64">
+                    Vision Link
+                  </p>
+                  <p className="mt-2 font-serif text-2xl text-cha-cream">
+                    {transportDiagnostics.videoFramesSent > 0 ? "Streaming to Gemini" : "Waiting for frames"}
+                  </p>
+                  <p className="mt-2 text-sm leading-relaxed text-cha-cream/68">
+                    {transportDiagnostics.videoFramesSent > 0
+                      ? `${transportDiagnostics.videoFramesSent} frames sent from the ${transportDiagnostics.cameraFacingMode} camera${
+                          transportDiagnostics.lastVideoFrameSize
+                            ? ` at ${transportDiagnostics.lastVideoFrameSize.width}x${transportDiagnostics.lastVideoFrameSize.height}`
+                            : ""
+                        }.`
+                      : "Enable the camera and keep the tea table in view so Master Chady can read the package and study the leaves."}
+                  </p>
+                </div>
+              ) : null}
 
               <SessionSettings
+                activeTrackLabel={activeTrack.label}
+                activeTrackId={activeTrackId}
                 isMusicEnabled={isMusicEnabled}
+                isTrackPickerOpen={isTrackPickerOpen}
                 musicVolume={musicVolume}
-                onToggleMusic={toggleMusic}
+                onToggleTrackPicker={() => setIsTrackPickerOpen((current) => !current)}
+                onTrackSelect={selectTrack}
+                playbackError={playbackError}
+                playbackState={playbackState}
                 onVolumeChange={setMusicVolume}
+                tracks={soundscapeTracks}
               />
-
-              {!hasActivated && !showStartCard ? (
-                <p className="px-1 text-xs uppercase tracking-[0.24em] text-cha-green-light/52">
-                  Ambient music will begin the next time you start a new session.
-                </p>
-              ) : null}
             </aside>
           ) : null}
         </div>
@@ -333,9 +376,11 @@ export default function LiveAgentSession({ onExit }: LiveAgentSessionProps) {
             <div className="pointer-events-none fixed inset-x-0 bottom-24 z-20 flex justify-center px-4 md:bottom-32">
               <BrewProgress
                 duration={brewTime}
+                infusion={brewContext?.currentInfusion}
                 isActive={isBrewing}
                 onComplete={stopBrewTimer}
                 runId={timerRunId}
+                teaName={brewContext?.teaName}
               />
             </div>
 
@@ -343,9 +388,11 @@ export default function LiveAgentSession({ onExit }: LiveAgentSessionProps) {
               <SessionControls
                 isCameraEnabled={isCameraEnabled}
                 isMicEnabled={isMicEnabled}
+                isMusicEnabled={isMusicEnabled}
                 onCameraToggle={() => void handleCameraToggle()}
                 onEndSession={() => void handleEndSession()}
                 onMicToggle={() => void handleMicPrimaryAction()}
+                onMusicToggle={() => void toggleMusic()}
               />
             </div>
           </>
