@@ -14,7 +14,7 @@ export default function SessionSettings({
   onVolumeChange,
 }: SessionSettingsProps) {
   return (
-    <div className="cha-surface w-full max-w-xs rounded-[1.5rem] p-4">
+    <div className="cha-surface w-full rounded-[1.5rem] p-4">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-[10px] uppercase tracking-[0.28em] text-cha-green-light/62">
